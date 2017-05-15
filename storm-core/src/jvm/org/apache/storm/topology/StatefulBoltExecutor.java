@@ -17,7 +17,6 @@
  */
 package org.apache.storm.topology;
 
-import org.apache.storm.Config;
 import org.apache.storm.spout.CheckpointSpout;
 import org.apache.storm.spout.OurCheckpointSpout;
 import org.apache.storm.state.State;
@@ -29,7 +28,6 @@ import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -69,14 +67,14 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 
         //FIXME:rebalance-sleep  create file
 
-        File file = new File(Config.BASE_SIGNAL_DIR_PATH +"REB_WAIT_DONE-"+Thread.currentThread().getId()+"_"+ UUID.randomUUID());
-        try {
-            if(file.createNewFile()) {
-//                System.out.println("File_creation_successfull");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        File file = new File(Config.BASE_SIGNAL_DIR_PATH +"REB_WAIT_DONE-"+Thread.currentThread().getId()+"_"+ UUID.randomUUID());
+//        try {
+//            if(file.createNewFile()) {
+////                System.out.println("File_creation_successfull");
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
     }
 
@@ -129,10 +127,10 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_boltInitialized"+boltInitialized);//FIXME:SYSO REMOVED
 
 
-//            bolt.initState((T) state);
+            bolt.initState((T) state);
             if (!boltInitialized) {
                 // FIXME:AS9
-                bolt.initState((T) state);
+//                bolt.initState((T) state);
                 boltInitialized = true;
                 LOG.debug("{} pending tuples to process", pendingTuples.size());
                 for (Tuple tuple : pendingTuples) {

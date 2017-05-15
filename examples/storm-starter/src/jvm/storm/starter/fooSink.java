@@ -4,10 +4,7 @@ import org.apache.storm.starter.genevents.logging.BatchedFileLogging;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
-import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +53,7 @@ public fooSink(String csvFileNameOutSink){
 
         // user code
 
-//        System.out.println("SINK_CALLED...");
+        System.out.println("SINK_CALLED..." + input);
 
 //        String msgId = input.getStringByField("MSGID")+","+input.getStringByField("value");
         String msgId = input.getStringByField("MSGID")+",MSGID"+input.getStringByField("value");

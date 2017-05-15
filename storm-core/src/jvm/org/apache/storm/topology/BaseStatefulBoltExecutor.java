@@ -41,11 +41,11 @@ import static org.apache.storm.spout.CheckpointSpout.*;
 public abstract class BaseStatefulBoltExecutor implements IRichBolt {
     private static final Logger LOG = LoggerFactory.getLogger(BaseStatefulBoltExecutor.class);
     private final Map<TransactionRequest, Integer> transactionRequestCount;
+    protected OutputCollector collector;
 //    private int checkPointInputTaskCount;
     private int checkPointInputTaskCount_PREP;
     private int checkPointInputTaskCount_OTHER;
     private long lastTxid = Long.MIN_VALUE;
-    protected OutputCollector collector;
 
     public BaseStatefulBoltExecutor() {
         transactionRequestCount = new HashMap<>();
@@ -68,7 +68,9 @@ public abstract class BaseStatefulBoltExecutor implements IRichBolt {
 //        System.out.println("TEST_running_count_over_"+streamID+ "_getThisComponentId_"+context.getThisComponentId());//FIXME:SYSO REMOVED
         for (GlobalStreamId inputStream : context.getThisSources().keySet()) {
             System.out.println("TEST_"+context.getThisComponentId()+"_streamID_inputStream_"+streamID+"_"+inputStream.get_streamId());
-            if (streamID.equals(inputStream.get_streamId())) {
+//            if (streamID.equals(inputStream.get_streamId())) {
+            if (inputStream.get_streamId().contains(streamID)) {
+                System.out.println("REWIRE_condition_in_BaseStatefulBoltExecutor" + context.getThisComponentId() + "_streamID_inputStream_" + streamID + "_" + inputStream.get_streamId());
                 count += context.getComponentTasks(inputStream.get_componentId()).size();
             }
         }
@@ -109,6 +111,7 @@ public abstract class BaseStatefulBoltExecutor implements IRichBolt {
                         lastTxid = txid;
                     }
                 } else {
+                    System.out.println("Ignoring_old_transaction_Action_{}_txid {}," + action + "," + txid);
                     LOG.debug("Ignoring old transaction. Action {}, txid {}", action, txid);
                     collector.ack(input);
                 }

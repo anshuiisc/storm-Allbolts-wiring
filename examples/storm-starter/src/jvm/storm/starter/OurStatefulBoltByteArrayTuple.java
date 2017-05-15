@@ -7,7 +7,6 @@ import org.apache.storm.serialization.KryoTupleDeserializer;
 import org.apache.storm.serialization.KryoTupleSerializer;
 import org.apache.storm.serialization.KryoValuesDeserializer;
 import org.apache.storm.serialization.KryoValuesSerializer;
-import org.apache.storm.spout.OurCheckpointSpout;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -16,8 +15,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 //import org.eclipse.jetty.util.ArrayQueue;
@@ -26,15 +23,12 @@ import java.util.*;
  * Created by anshushukla on 28/02/17.
  */
 public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBolt<KeyValueState<T, V>> {
+    private static final Object DRAIN_LOCK = new Object();
+    //    private List<byte []> ourOutTuples ;
+    public List<byte[]> redisTuples = new ArrayList();
+    public String name;
     //FIXME: our declared vars start
     boolean commitFlag=false,drainDone=true,passThrough=false;
-    private static final Object DRAIN_LOCK = new Object();
-
-    private List<byte []> ourPendingTuples ;
-    private List<byte []> ourOutTuples ;
-//    public List<byte []> redisTuples = new ArrayList();
-    String name;
-
     KeyValueState<T, V> kvstate;
     OutputCollector collector;
 
@@ -43,31 +37,30 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     KryoTupleDeserializer ktd;
     KryoValuesSerializer kvs;
     KryoValuesDeserializer kvd;
-    Map p;
-
-    Long lastRedisEntry;
-    int flag_first_prep=0;
+    Map p = new HashMap();
+    private List<byte[]> ourPendingTuples;
     private boolean kryoInit;
 
-
-    //FIXME: inQueue
-//    DisruptorQueue.QueueMetrics in=q.new QueueMetrics();
+    private void initKryo() {
+        if (kryoInit) return;
+        p = new HashMap();
+        p.put(Config.TOPOLOGY_KRYO_FACTORY, "org.apache.storm.serialization.DefaultKryoFactory");
+        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION, true);
+        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER, "org.apache.storm.serialization.types.ListDelegateSerializer");
+        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS, true);
+        kvs = new KryoValuesSerializer(p);
+        kts = new KryoTupleSerializer(p, _context);
+        kryoInit = true;
+    }
 
     @Override
     public void prePrepare(long txid) {
-//        System.out.println("TEST:prePrepare:"+Thread.currentThread().toString());//FIXME:SYSO REMOVED
-//        p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
-//        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
-//        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
-//        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS,true);
-//        kvs=new KryoValuesSerializer(p);
-//        kts=new KryoTupleSerializer(p,_context);
+        System.out.println("TEST:prePrepare:" + Thread.currentThread().toString());
 
-//        synchronized (DRAIN_LOCK) {
-        kryoInit = false;
-
+        synchronized (DRAIN_LOCK) {
+            kryoInit = false;
             drainDone=false;
-         System.out.println("TEST_prePrepare_drainDone_FALSE"+drainDone);
+            System.out.println("TEST_prePrepare_drainDone_FALSE" + drainDone);
 ////            commitFlag=true;
 ////            long startDrain=System.currentTimeMillis();
 //            /*do {
@@ -84,22 +77,11 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 ////                while (System.currentTimeMillis() - startDrain < 30000) ;
 //            while(true);  */
 ////            drainDone=true;
-//        }
+        }
 
 
     }
 
-    private void initKryo(){
-        if(kryoInit) return;
-        p=new HashMap();
-        p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
-        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
-        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
-        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS,true);
-        kvs=new KryoValuesSerializer(p);
-        kts=new KryoTupleSerializer(p,_context);
-        kryoInit = true;
-    }
 
     public  boolean preExecute(Tuple in) // logic for checking commit flag thing accumulate msg //    execute or store it
     {
@@ -111,60 +93,54 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 //        }
 
 
-//        System.out.println("TEST:preExecute:"+Thread.currentThread().toString());
+        System.out.println("TEST:preExecute:" + Thread.currentThread().toString());
 //        p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
 //        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
 //        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
 //        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS,true);
+//
+//        kts=new KryoTupleSerializer(p,_context);
 
-//         kts=new KryoTupleSerializer(p,_context);
+//        ourPendingTuples.add(kts.serialize(in)); // custom constr
 
-
-//        System.out.println("TEST_preExecute_drainDone_Flag_Value"+drainDone);
-//            synchronized (DRAIN_LOCK) {
-//        if(!drainDone && flag_first_prep==0) {//FIXME:SYSO REMOVED
-//            System.out.println("TEST_LOG_FIRST_APP_MSG_AFTER_PREP_ACK:"+_context.getThisComponentId()+"_"+Thread.currentThread()+","+ System.currentTimeMillis());
-//            flag_first_prep=1;
-//        }
-                if (!drainDone) {
-                    initKryo();
-                    ourPendingTuples.add(kts.serialize(in)); // custom constr
-//                    System.out.println("TEST_preExecute_written_to_ourPendingTuples"+ourPendingTuples.size()+","+_context.getThisComponentId());//FIXME:SYSO REMOVED
+        System.out.println("TEST_preExecute_drainDone_Flag_Value" + drainDone);
+//        synchronized (DRAIN_LOCK) {
+        if (!drainDone) {
+            initKryo();
+            ourPendingTuples.add(kts.serialize(in)); // custom constr
+            System.out.println("TEST_preExecute_written_to_ourPendingTuples" + ourPendingTuples.size() + "," + _context.getThisComponentId());
 //                    DRAIN_LOCK.notify();
-                    lastRedisEntry=System.currentTimeMillis();
-                    return false;
-                }
-//            }
+            return false;
+        }
+//        }
         return true;
     }
 
 
     @Override
     public void preCommit(long txid) {
-//        System.out.println("TEST_LOG_lastRedisEntry:"+Thread.currentThread()+","+lastRedisEntry);//FIXME:SYSO REMOVED
-//        System.out.println("TEST_LOG_REDIS_COMMIT_STARTED:"+Thread.currentThread()+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
-//        System.out.println("TEST:preCommit");
-//        System.out.println("TEST_writing_tuples_to_redis_Bolt_"+_context.getThisComponentId() +"_ourOutTuples:"+ourOutTuples.size()+"ourPendingTuples:"+ourPendingTuples.size());//FIXME:SYSO REMOVED
-        if(kryoInit) {
-            kvstate.put((T) "OUR_OUT_TUPLESX", (V) ourOutTuples);
-            kvstate.put((T) "OUR_PENDING_TUPLESX", (V) ourPendingTuples);
-        }
-//        System.out.println("TEST_LOG_REDIS_COMMIT_FINISHED:"+Thread.currentThread()+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
+        System.out.println("TEST:preCommit");
+        System.out.println("TEST_writing_tuples_to_redis_Bolt_" + _context.getThisComponentId() + ",preCommit_getThisTaskId," + _context.getThisTaskId());
+//        System.out.println("_ourOutTuples:"+ourOutTuples+"NULL_CHECK"+ourOutTuples);
+        System.out.println("ourPendingTuples:" + ourPendingTuples + "NULL_CHECK" + ourPendingTuples.size());
+//        kvstate.put((T)"OUR_OUT_TUPLESX",(V)ourOutTuples);
+        kvstate.put((T) "OUR_PENDING_TUPLESX", (V) ourPendingTuples);
+
+//        System.out.println(_context.getThisTaskId());
+
 //        //FIXME:AS8
         drainDone=true;
-        flag_first_prep=0;// reset to record only first TS
     }
 
     public  void emit(Tuple input, Values out) // used by user for emitting
     {
-//        System.out.println("TEST:emit:"+Thread.currentThread().toString());
+        System.out.println("TEST:emit:" + Thread.currentThread().toString());
 
 
 //        p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
 //        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
 //        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
 //        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS,true);
-
 //        kvs=new KryoValuesSerializer(p);
 //        kts=new KryoTupleSerializer(p,_context);
 
@@ -176,21 +152,21 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 //        }
 
 //         logic for checking ack after post processing and then emit
-//        System.out.println("TEST_emit_drainDone_Flag_Value"+drainDone);
-
-            if (!drainDone) {
-                initKryo();
-                try {
-//                    ourOutTuples.add(kts.serialize(input));
-                    ourOutTuples.add(kvs.serialize(out));
-//                    System.out.println("TEST_emit_written_to_ourOutTuples");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-//                DRAIN_LOCK.notify();
-                return ;
-            }
-//        System.out.println("TEST_emitting_downstream");
+        System.out.println("TEST_emit_drainDone_Flag_Value" + drainDone);
+//        synchronized (DRAIN_LOCK) {
+//        if (!drainDone) {
+//            try {
+////                    ourOutTuples.add(kts.serialize(input));
+////                ourOutTuples.add(kvs.serialize(out));
+//                System.out.println("TEST_emit_written_to_ourOutTuples");
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+////                DRAIN_LOCK.notify();
+//            return ;
+//        }
+//        }
+        System.out.println("TEST_emitting_downstream");
         collector.emit(out);
 
 //                collector.emit(input,out);
@@ -207,6 +183,7 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     @Override
     public void initState(KeyValueState<T, V> state) {
         System.out.println("TEST_initState_start");
+        drainDone = true;
 //        //FIXME:AS8
 //        System.out.println("TEST_unsetting_drainDone_"+drainDone);
 //        drainDone=true;
@@ -215,13 +192,14 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         try {
             if(file.createNewFile()) {
                 System.out.println("INIT_creation_successfull");
-                OurCheckpointSpout.logTimeStamp("INIT_CALLED_,"+System.currentTimeMillis());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-// FIXME: if state is null, then nothing to do.
-        p = new HashMap();
+
+        // FIXME: if state is null, then nothing to do.
+        initKryo();
+
         p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
         p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
         p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
@@ -230,27 +208,28 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         kvd=new KryoValuesDeserializer(p);
 
         kvstate=state;
-        ourOutTuples= (List<byte[]>) kvstate.get((T) "OUR_OUT_TUPLESX", (V) new ArrayList<byte []>());
+//        ourOutTuples= (List<byte[]>) kvstate.get((T) "OUR_OUT_TUPLESX", (V) new ArrayList<byte []>());
         ourPendingTuples= (List<byte[]>) kvstate.get((T) "OUR_PENDING_TUPLESX", (V) new ArrayList<byte []>());
 
-        System.out.println("TEST_restored_tuples_from_redis_for_bolt_"+_context.getThisComponentId()+"_ourOutTuples:"+ourOutTuples.size()+"ourPendingTuples:"+ourPendingTuples.size());
+        System.out.println("TEST_restored_tuples_from_redis_for_bolt_" + _context.getThisComponentId() + "ourPendingTuples:" + ourPendingTuples.size()
+                + ",initState_getThisTaskId," + _context.getThisTaskId());
 
-        for (int i = 0; i < ourOutTuples.size(); i++) {
-            try {
-//                System.out.println("TEST_initState_ourOutTuples_TUPLE_"+ktd.deserialize(ourOutTuples.get(i)).toString());
+//        for (int i = 0; i < ourOutTuples.size(); i++) {
+//            try {
+////                System.out.println("TEST_initState_ourOutTuples_TUPLE_"+ktd.deserialize(ourOutTuples.get(i)).toString());
 //                System.out.println("TEST_initState_ourOutTuples_VALUE_"+kvd.deserialize(ourOutTuples.get(i)).toString());
-                collector.emit(kvd.deserialize(ourOutTuples.get(i)));// FIXME: WRONG ack and emit the tuple (Re-chek)
-//                collector.emit(ktd.deserialize(ourOutTuples.get(i)),kvd.deserialize(ourOutTuples.get(i+1)));// FIXME: WRONG ack and emit the tuple (Re-chek)
-//                collector.ack(ktd.deserialize(ourOutTuples.get(i)));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        ourOutTuples.clear();
+//                collector.emit(kvd.deserialize(ourOutTuples.get(i)));// FIXME: WRONG ack and emit the tuple (Re-chek)
+////                collector.emit(ktd.deserialize(ourOutTuples.get(i)),kvd.deserialize(ourOutTuples.get(i+1)));// FIXME: WRONG ack and emit the tuple (Re-chek)
+////                collector.ack(ktd.deserialize(ourOutTuples.get(i)));
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        ourOutTuples.clear();
 
         for (int i = 0; i < ourPendingTuples.size(); i++) {
             try {
-//                System.out.println("TEST_initState_ourPendingTuples_TUPLE_"+ktd.deserialize(ourPendingTuples.get(i)).toString());
+                System.out.println("TEST_initState_ourPendingTuples_TUPLE_" + ktd.deserialize(ourPendingTuples.get(i)).toString());
                 execute(ktd.deserialize(ourPendingTuples.get(i)));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -259,28 +238,28 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         ourPendingTuples.clear();
 
 
-//        System.out.println(name);
 //        redisTuples = (List<byte[]>) kvstate.get((T)"redisTuples", (V) new ArrayList<byte[]>());
 //        System.out.println("SIZE_OF_REDIS_TUPLES:"+redisTuples.size());
 //        for(int i=0;i<redisTuples.size();i++){
 //            System.out.println("Redis_entry:"+ new String(redisTuples.get(i)));
 //        }
-//        sum=(List<byte[]>) kvstate.get((T)name, (V) new ArrayList<byte[]>());
+
+        // send first
+//        for (CustomPair tuple : ourOutTuples) {
+//            collector.emit(tuple.input,tuple.output);// FIXME: WRONG ack and emit the tuple (Re-chek)
+//            collector.ack(tuple.input);
+//        }
+//        ourOutTuples.clear();
+////        passThrough=false;
+//
+//        for (CustomPair tuple : ourPendingTuples) {
+//            execute(tuple.input);
+//        }
+//        ourPendingTuples.clear();
         System.out.println("TEST_initState_finish");
     }
 
-    public byte[] longToBytes(long x) {
-        ByteBuffer buffer = ByteBuffer.allocate(100);
-        buffer.putLong(x);
-        return buffer.array();
-    }
 
-    public long bytesToLong(byte[] bytes) {
-        ByteBuffer buffer = ByteBuffer.allocate(100);
-        buffer.put(bytes);
-        buffer.flip();//need flip
-        return buffer.getLong();
-    }
 
 //    public class CustomPair implements Serializable{/// FIXME: implements serilizable
 //

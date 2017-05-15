@@ -54,89 +54,6 @@ public class SampleSpoutWithCHKPTSpout extends OurCheckpointSpout implements ISy
 	}
 
 	@Override
-	public void nextTuple() {
-		//** CHKPT logic start
-//		val+=1;
-//		if(val>10000 ) {
-//			System.out.println("doemit_set_to_FALSE...");
-//			doemit=false; // set flag to pause spout
-//
-//
-////			Map conf = Utils.readStormConfig();
-////			NimbusClient client = NimbusClient.getConfiguredClient(conf);
-////
-////			try {
-////				client.getClient().activate("test");
-////			} catch (TException e) {
-////				e.printStackTrace();
-////			}
-////			System.out.println("Successfully submit command activate " + "test");
-//		}
-//
-//		if(val==1) // for INITilisation
-//			super.nextTuple(false);
-//
-//		if(!doemit) {
-//			super.nextTuple(doemit);
-//			return;
-//		}
-
-
-		if(isPaused()) {
-			//			isPausedFlag=1;
-			OurCheckpointSpout.logTimeStamp("LAST_OLD_APP_FOR_SINK_MSGID,"+msgId);
-			return;
-		}
-		//** CHKPT logic stop
-
-		// TODO Auto-generated method stub
-//		try {
-//		System.out.println("spout Queue count= "+this.eventQueue.size());
-		// allow multiple tuples to be emitted per next tuple.
-		// Discouraged? https://groups.google.com/forum/#!topic/storm-user/SGwih7vPiDE
-//		int count = 0, MAX_COUNT=10; // FIXME?
-//		while(count < MAX_COUNT) {
-			List<String> entry = this.eventQueue.poll(); // nextTuple should not block!
-
-			if(entry == null) {
-				System.out.println("No_entry_in_queue");
-				return;
-			}
-//			count++;
-			Values values = new Values();
-			StringBuilder rowStringBuf = new StringBuilder();
-			for(String s : entry){
-				rowStringBuf.append(",").append(s);
-			}
-			String rowString = rowStringBuf.toString().substring(1);
-//			String rowString = rowStringBuf.toString();
-			values.add(rowString);
-			msgId++;
-			values.add(Long.toString(msgId));
-			System.out.println("TEST_emitting_data_tuple_MSGID:"+msgId);
-
-			this._collector.emit("datastream", new Values(val, System.currentTimeMillis() - (24 * 60 * 60 * 1000), msgId));
-
-//			this._collector.emit(values);
-			try {
-//				msgId++;
-				if(val==0)
-					ba.batchLogwriter(System.currentTimeMillis(),"MSGID0," + msgId);
-				else
-					ba.batchLogwriter(System.currentTimeMillis(),"MSGID1," + msgId);
-				//ba.batchLogwriter(System.nanoTime(),"MSGID," + msgId);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-//			System.out.println("values by source are -" + values);
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		}
-	}
-
-	@Override
 	public void open(Map map, TopologyContext context, SpoutOutputCollector collector) {
 		// TODO Auto-generated method stub
 //		System.out.println("SampleSpout PID,"+ ManagementFactory.getRuntimeMXBean().getName());
@@ -227,6 +144,93 @@ public class SampleSpoutWithCHKPTSpout extends OurCheckpointSpout implements ISy
 
 	}
 
+
+	@Override
+	public void nextTuple() {
+		//** CHKPT logic start
+//		val+=1;
+//		if(val>10000 ) {
+//			System.out.println("doemit_set_to_FALSE...");
+//			doemit=false; // set flag to pause spout
+//
+//
+////			Map conf = Utils.readStormConfig();
+////			NimbusClient client = NimbusClient.getConfiguredClient(conf);
+////
+////			try {
+////				client.getClient().activate("test");
+////			} catch (TException e) {
+////				e.printStackTrace();
+////			}
+////			System.out.println("Successfully submit command activate " + "test");
+//		}
+//
+//		if(val==1) // for INITilisation
+//			super.nextTuple(false);
+//
+//		if(!doemit) {
+//			super.nextTuple(doemit);
+//			return;
+//		}
+
+
+		if (isPaused()) {
+			//			isPausedFlag=1;
+			OurCheckpointSpout.logTimeStamp("LAST_OLD_APP_FOR_SINK_MSGID," + msgId);
+			return;
+		}
+		//** CHKPT logic stop
+
+		// TODO Auto-generated method stub
+//		try {
+//		System.out.println("spout Queue count= "+this.eventQueue.size());
+		// allow multiple tuples to be emitted per next tuple.
+		// Discouraged? https://groups.google.com/forum/#!topic/storm-user/SGwih7vPiDE
+//		int count = 0, MAX_COUNT=10; // FIXME?
+//		while(count < MAX_COUNT) {
+		List<String> entry = this.eventQueue.poll(); // nextTuple should not block!
+
+		if (entry == null) {
+			System.out.println("No_entry_in_queue");
+			return;
+		}
+//			count++;
+		Values values = new Values();
+		StringBuilder rowStringBuf = new StringBuilder();
+		for (String s : entry) {
+			rowStringBuf.append(",").append(s);
+		}
+		String rowString = rowStringBuf.toString().substring(1);
+//			String rowString = rowStringBuf.toString();
+		values.add(rowString);
+		msgId++;
+		values.add(Long.toString(msgId));
+		System.out.println("TEST_emitting_data_tuple_MSGID:" + msgId);
+
+		this._collector.emit(new Values(val, System.currentTimeMillis() - (24 * 60 * 60 * 1000), msgId));
+//			this._collector.emit("datastream", new Values(val, System.currentTimeMillis() - (24 * 60 * 60 * 1000), msgId));
+
+//			this._collector.emit(values);
+		try {
+//				msgId++;
+			if (val == 0)
+				ba.batchLogwriter(System.currentTimeMillis(), "MSGID0," + msgId);
+			else
+				ba.batchLogwriter(System.currentTimeMillis(), "MSGID1," + msgId);
+			//ba.batchLogwriter(System.nanoTime(),"MSGID," + msgId);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+//			System.out.println("values by source are -" + values);
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		}
+	}
+
+
+
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
 		// TODO Auto-generated method stub
@@ -236,7 +240,8 @@ public class SampleSpoutWithCHKPTSpout extends OurCheckpointSpout implements ISy
 
 //		declarer.declare(new Fields("RowString", "MSGID"));
 
-		declarer.declareStream("datastream", new Fields("value", "ts", "MSGID"));
+//		declarer.declareStream("datastream", new Fields("value", "ts", "MSGID"));
+		declarer.declare(new Fields("value", "ts", "MSGID"));
 		super.declareOutputFields(declarer);
 
 	}

@@ -63,25 +63,11 @@ import org.slf4j.LoggerFactory;
 public class FooLinearParseTopology {
     private static final Logger LOG = LoggerFactory.getLogger(FooLinearParseTopology.class);
 
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
+    private static final String[] PREPARE_STREAM_ID_list = {"PREPARE_STREAM_ID1", "PREPARE_STREAM_ID2", "PREPARE_STREAM_ID3", "PREPARE_STREAM_ID4",
+            "PREPARE_STREAM_ID5", "PREPARE_STREAM_ID6", "PREPARE_STREAM_ID7", "PREPARE_STREAM_ID9",
+            "PREPARE_STREAM_ID10", "PREPARE_STREAM_ID11", "PREPARE_STREAM_ID12", "PREPARE_STREAM_ID13",
+            "PREPARE_STREAM_ID14", "PREPARE_STREAM_ID15", "PREPARE_STREAM_ID16", "PREPARE_STREAM_ID17",
+            "PREPARE_STREAM_ID18", "PREPARE_STREAM_ID19", "PREPARE_STREAM_ID20", "PREPARE_STREAM_ID21"};
 
     public static void main(String[] args) throws Exception {
 
@@ -101,29 +87,50 @@ public class FooLinearParseTopology {
         System.out.println("taskPropFilename-"+taskPropFilename);
 
         TopologyBuilder builder = new TopologyBuilder();
+
+
         builder.setSpout("spout", new SampleSpoutWithCHKPTSpout(argumentClass.getInputDatasetPathName(), spoutLogFileName, argumentClass.getScalingFactor()), 1);
 
-//        String s=
+        // with direct stream
+        builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).setNumTasks(4).shuffleGrouping("spout")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[0]);
+        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).setNumTasks(4).shuffleGrouping("fooPartial2")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[1]);
+//        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
+//                .allGrouping("spout","PREPARE_STREAM_ID3");
+//
+//        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
+//                .allGrouping("spout","PREPARE_STREAM_ID4");
+//
+//        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
+//                .allGrouping("spout","PREPARE_STREAM_ID5");
+//
+////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial3")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
 
+
+        /*
         //        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
 //        builder.setSpout("spout", new fooRandomIntegerWithCHKPTSpout());
-        builder.setBolt("fooPartial2", new fooXMLParser ("2"), 1).shuffleGrouping("spout","datastream")
-                .allGrouping("spout","PREPARE_STREAM_ID");
+        builder.setBolt("fooPartial2", new fooXMLParser ("2"), 1).setNumTasks(4).shuffleGrouping("spout")
+                .shuffleGrouping("spout","PREPARE_STREAM_ID1");
         builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2")
-                .allGrouping("spout","PREPARE_STREAM_ID");
-        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
-                .allGrouping("spout","PREPARE_STREAM_ID");
+                .shuffleGrouping("spout","PREPARE_STREAM_ID2");
+//        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
+//                .allGrouping("spout","PREPARE_STREAM_ID3");
+//
+//        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
+//                .allGrouping("spout","PREPARE_STREAM_ID4");
+//
+//        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
+//                .allGrouping("spout","PREPARE_STREAM_ID5");
+//
+////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial3")
+                .shuffleGrouping("spout","PREPARE_STREAM_ID6");
 
-        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
-                .allGrouping("spout","PREPARE_STREAM_ID");
-
-        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
-                .allGrouping("spout","PREPARE_STREAM_ID");
-
-//        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial6")
-                .allGrouping("spout","PREPARE_STREAM_ID");
-
+*/
 
 //        builder.setBolt("fooPartial2", new foo("fooPartial2"), 1).shuffleGrouping("spout").setNumTasks(1);
 //        builder.setBolt("printer", new PrinterBolt(), 2).shuffleGrouping("partialsum2");
@@ -151,6 +158,7 @@ public class FooLinearParseTopology {
 //            conf.setNumWorkers(1);
             conf.setNumWorkers(6);
             StormSubmitter.submitTopology(argumentClass.getTopoName(), conf, builder.createTopology());
+//            Arrays.asList("REWIRE_FooLinearParseTopology_get_bolts"+builder.createTopology().get_bolts());
         }
 
         else {
@@ -161,6 +169,26 @@ public class FooLinearParseTopology {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

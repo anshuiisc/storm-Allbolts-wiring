@@ -17,6 +17,8 @@
  */
 package org.apache.storm.spout;
 
+
+import javafx.util.Pair;
 import org.apache.storm.Config;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.state.StateFactory;
@@ -30,6 +32,9 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.storm.spout.CheckPointState.Action;
@@ -44,26 +49,36 @@ import static org.apache.storm.spout.CheckPointState.State.COMMITTED;
  * @see CheckPointState
  */
 public class CheckpointSpout extends BaseRichSpout {
-    private static final Logger LOG = LoggerFactory.getLogger(CheckpointSpout.class);
-
 //    public static final String PREPARE_STREAM_ID = "$checkpoint";
     public static final String CHECKPOINT_STREAM_ID = "$checkpoint";
     public static final String CHECKPOINT_COMPONENT_ID = "$checkpointspout";
     public static final String CHECKPOINT_FIELD_TXID = "txid";
     public static final String CHECKPOINT_FIELD_ACTION = "action";
+    private static final Logger LOG = LoggerFactory.getLogger(CheckpointSpout.class);
     private static final String TX_STATE_KEY = "__state";
+    //    private boolean recoveryStepInProgress;
+    public boolean recoveryStepInProgress;
+    //    private boolean recovering;
+    public boolean recovering;
+    Map<String, List<String>> componentID_streamID_map;
+    Map<String, List<Integer>> componentID_taskID_map;
+    Map<Long, Pair<String, String>> msgID_streamAction_map = new HashMap();
+    //    int _ackReceivedCount;
+    List<Long> _ackReceivedIDList;
+    long chkptMsgid = 0;
     private TopologyContext context;
     private SpoutOutputCollector collector;
     private long lastCheckpointTs;
     private int checkpointInterval;
     private int sleepInterval;
-//    private boolean recoveryStepInProgress;
-    public boolean recoveryStepInProgress;
     private boolean checkpointStepInProgress;
-//    private boolean recovering;
-    public boolean recovering;
     private KeyValueState<String, CheckPointState> checkpointState;
     private CheckPointState curTxState;
+
+    public static boolean isCheckpoint(Tuple input) {
+        //FIXME:AS7
+        return CHECKPOINT_STREAM_ID.equals(input.getSourceStreamId()) || (input.getSourceStreamId().contains("PREPARE_STREAM_ID"));
+    }
 
     @Override
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
@@ -83,6 +98,9 @@ public class CheckpointSpout extends BaseRichSpout {
         recoveryStepInProgress = false;
         checkpointStepInProgress = false;
         recovering = true;
+
+        _ackReceivedIDList = new ArrayList<>();
+
     }
 
     @Override
@@ -106,16 +124,35 @@ public class CheckpointSpout extends BaseRichSpout {
     @Override
     public void ack(Object msgId) {
         LOG.debug("Got ack with txid {}, current txState {}", msgId, curTxState);
-        if (curTxState.getTxid() == ((Number) msgId).longValue()) {
+        System.out.println("REWIRE_curTxState:" + curTxState + ",msgId:" + ((Number) msgId).longValue());
+//        if (curTxState.getTxid() == ((Number) msgId).longValue()) {
+
+        //FIXME: fail condition not handled
+        System.out.println("REWIRE_msgID_streamAction_map_ACK," + msgId + "," + msgID_streamAction_map.get(msgId) + ",msgID_streamAction_map_size," + msgID_streamAction_map.size());
+        _ackReceivedIDList.add(((Number) msgId).longValue());
+        if (_ackReceivedIDList.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
+            System.out.println("REWIRE_COUNT_is_equal....");
             if (recovering) {
                 handleRecoveryAck();
             } else {
                 handleCheckpointAck();
             }
-        } else {
-            LOG.warn("Ack msgid {}, txState.txid {} mismatch", msgId, curTxState.getTxid());
+            resetProgress();
+            System.out.println("REWIRE_ackReceivedCount:" + _ackReceivedIDList + ",getAllTaskCount:" + getAllTaskCount());
+            // reset the list for INIT acks
+            _ackReceivedIDList.clear();
+            msgID_streamAction_map.clear(); // clearing required for checking for COMMIT message after init and prepare phases
+        } else if (msgID_streamAction_map.size() == 0) {
+            System.out.println("REWIRE_ack_for_COMMIT_msg");
+            if (recovering) {
+                handleRecoveryAck();
+            } else {
+                handleCheckpointAck();
+            }
+            resetProgress();
         }
-        resetProgress();
+        System.out.println("REWIRE_ackReceivedCount:" + _ackReceivedIDList + ",getAllTaskCount:" + getAllTaskCount());
+
     }
 
     @Override
@@ -131,11 +168,6 @@ public class CheckpointSpout extends BaseRichSpout {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declareStream(CHECKPOINT_STREAM_ID, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-    }
-
-    public static boolean isCheckpoint(Tuple input) {
-        //FIXME:AS7
-        return CHECKPOINT_STREAM_ID.equals(input.getSourceStreamId())||"PREPARE_STREAM_ID".equals(input.getSourceStreamId());
     }
 
     /**
@@ -230,27 +262,32 @@ public class CheckpointSpout extends BaseRichSpout {
         //FIXME:LOG1
 //        System.out.println("TEST_LOG_emit_spout:"+context.getThisComponentId()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
         if(action.name().equals("COMMIT")) {
-//            System.out.println("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
-            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
+            System.out.println("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
+//            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
+            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid + 1);
         }
         else {
-//            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");//FIXME:SYSO REMOVED
-            collector.emit("PREPARE_STREAM_ID", new Values(txid, action), txid);
-        }
 
-//        if(action.name().equals("PREPARE")) {
-//            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");
-//            collector.emit("PREPARE_STREAM_ID", new Values(txid, action), txid);
-//        }
-//
-//        else if(action.name().equals("INITSTATE")) {
-//            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");
-//            collector.emit("PREPARE_STREAM_ID", new Values(txid, action), txid);
-//        }
-//        else {
-//            System.out.println("TEST_Emitting_on_CHECKPOINT_STREAM_ID");
-//            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
-//        }
+            for (String boltName : componentID_taskID_map.keySet()) {
+                int task_count = componentID_taskID_map.get(boltName).size();
+                for (int taskID : componentID_taskID_map.get(boltName)) {
+                    task_count--;
+                    List<String> streamIDList = componentID_streamID_map.get(boltName);
+                    for (String streamID : streamIDList) {
+                        if (!streamID.equals("$checkpoint") && !streamID.equals("default")) {
+                            chkptMsgid = chkptMsgid + 1;
+                            System.out.println("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + "," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
+//                            collector.emit(streamID, new Values(txid, action), chkptMsgid);
+                            collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
+                            msgID_streamAction_map.put(chkptMsgid, new Pair<String, String>(streamID, action.name()));// FIXME:  store chkptMsgid also
+                        }
+                    }
+                }
+            }
+            System.out.println("REWIRE_msgID_streamAction_map:" + msgID_streamAction_map);
+
+//            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");//FIXME:SYSO REMOVED
+        }
     }
 
     private void saveTxState(CheckPointState txState) {
@@ -282,6 +319,16 @@ public class CheckpointSpout extends BaseRichSpout {
     public boolean isCheckpointAckBymsgId(Object msgId){
         return (curTxState.getTxid() == ((Number) msgId).longValue()) ;
     }
+
+    public int getAllTaskCount() {
+        int _taskCount = 0;
+        //total tasks other than spout
+        for (String boltName : componentID_taskID_map.keySet()) {
+            _taskCount += componentID_taskID_map.get(boltName).size();
+        }
+        return _taskCount;
+    }
+
 //    public boolean islastCommitMessage(){
 //        return CheckPointState.createFile;
 //    }

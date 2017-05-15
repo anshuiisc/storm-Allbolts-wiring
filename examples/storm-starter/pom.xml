@@ -15,7 +15,8 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
       <artifactId>storm</artifactId>
@@ -87,7 +88,7 @@
         Use "provided" scope to keep storm out of the jar-with-dependencies
         For IntelliJ dev, intellij will load properly.
       -->
-        <scope>${provided.scope}</scope>
+        <!--<scope>${provided.scope}</scope>-->
     </dependency>
       <dependency>
           <groupId>org.apache.storm</groupId>
