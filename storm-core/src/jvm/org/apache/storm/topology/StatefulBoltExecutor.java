@@ -127,16 +127,17 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_boltInitialized"+boltInitialized);//FIXME:SYSO REMOVED
 
 
-            bolt.initState((T) state);
+//            bolt.initState((T) state);
             if (!boltInitialized) {
                 // FIXME:AS9
-//                bolt.initState((T) state);
+                bolt.initState((T) state);
                 boltInitialized = true;
                 LOG.debug("{} pending tuples to process", pendingTuples.size());
                 for (Tuple tuple : pendingTuples) {
                     doExecute(tuple);
                 }
                 pendingTuples.clear();
+                collector.delegate.ack(checkpointTuple);
             } else {
                 LOG.debug("Bolt state is already initialized, ignoring tuple {}, action {}, txid {}",
                           checkpointTuple, action, txid);
@@ -152,8 +153,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_emitting_msg_on_CHECKPOINT_STREAM_ID_"+action);//FIXME:SYSO REMOVED
             collector.emit(CheckpointSpout.CHECKPOINT_STREAM_ID, checkpointTuple, new Values(txid, action));
             collector.delegate.ack(checkpointTuple);
-        }
-        else{
+        } else if (action == PREPARE) {
 //            System.out.println("TEST_only_acking_OTHER_msg_not_emitting");//FIXME:SYSO REMOVED
             collector.delegate.ack(checkpointTuple);
         }

@@ -18,7 +18,6 @@
 package org.apache.storm.spout;
 
 
-import javafx.util.Pair;
 import org.apache.storm.Config;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.state.StateFactory;
@@ -32,10 +31,7 @@ import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.storm.spout.CheckPointState.Action;
 import static org.apache.storm.spout.CheckPointState.State.COMMITTED;
@@ -62,9 +58,10 @@ public class CheckpointSpout extends BaseRichSpout {
     public boolean recovering;
     Map<String, List<String>> componentID_streamID_map;
     Map<String, List<Integer>> componentID_taskID_map;
-    Map<Long, Pair<String, String>> msgID_streamAction_map = new HashMap();
+    //    Map<Long, Pair<String, String>> msgID_streamAction_map = new HashMap();
+    Map<Long, EmittedMsgDetails> msgID_streamAction_map = new HashMap();
     //    int _ackReceivedCount;
-    List<Long> _ackReceivedIDList;
+    Set<Integer> _ackReceivedTaskIDSet;
     long chkptMsgid = 0;
     private TopologyContext context;
     private SpoutOutputCollector collector;
@@ -99,7 +96,7 @@ public class CheckpointSpout extends BaseRichSpout {
         checkpointStepInProgress = false;
         recovering = true;
 
-        _ackReceivedIDList = new ArrayList<>();
+        _ackReceivedTaskIDSet = new HashSet<>();
 
     }
 
@@ -125,12 +122,13 @@ public class CheckpointSpout extends BaseRichSpout {
     public void ack(Object msgId) {
         LOG.debug("Got ack with txid {}, current txState {}", msgId, curTxState);
         System.out.println("REWIRE_curTxState:" + curTxState + ",msgId:" + ((Number) msgId).longValue());
-//        if (curTxState.getTxid() == ((Number) msgId).longValue()) {
-
-        //FIXME: fail condition not handled
         System.out.println("REWIRE_msgID_streamAction_map_ACK," + msgId + "," + msgID_streamAction_map.get(msgId) + ",msgID_streamAction_map_size," + msgID_streamAction_map.size());
-        _ackReceivedIDList.add(((Number) msgId).longValue());
-        if (_ackReceivedIDList.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
+        System.out.println("REWIRE_custom_object_details," + msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
+                + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name());
+
+        _ackReceivedTaskIDSet.add(msgID_streamAction_map.get(msgId).gettaskID()); // to check that ACK is received from all taskIDs
+        System.out.println("REWIRE_ackReceivedCount_taskids:" + _ackReceivedTaskIDSet + ",size," + _ackReceivedTaskIDSet.size() + ",getAllTaskCount:" + getAllTaskCount());
+        if (_ackReceivedTaskIDSet.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
             System.out.println("REWIRE_COUNT_is_equal....");
             if (recovering) {
                 handleRecoveryAck();
@@ -138,11 +136,9 @@ public class CheckpointSpout extends BaseRichSpout {
                 handleCheckpointAck();
             }
             resetProgress();
-            System.out.println("REWIRE_ackReceivedCount:" + _ackReceivedIDList + ",getAllTaskCount:" + getAllTaskCount());
-            // reset the list for INIT acks
-            _ackReceivedIDList.clear();
+            _ackReceivedTaskIDSet.clear();// reset the list for INIT acks
             msgID_streamAction_map.clear(); // clearing required for checking for COMMIT message after init and prepare phases
-        } else if (msgID_streamAction_map.size() == 0) {
+        } else if (msgID_streamAction_map.get(msgId).getaction().name().equals("COMMIT")) {
             System.out.println("REWIRE_ack_for_COMMIT_msg");
             if (recovering) {
                 handleRecoveryAck();
@@ -150,9 +146,10 @@ public class CheckpointSpout extends BaseRichSpout {
                 handleCheckpointAck();
             }
             resetProgress();
+            _ackReceivedTaskIDSet.clear();
+            msgID_streamAction_map.clear(); // clearing required for checking for COMMIT message after init and prepare phases
         }
-        System.out.println("REWIRE_ackReceivedCount:" + _ackReceivedIDList + ",getAllTaskCount:" + getAllTaskCount());
-
+//        System.out.println("REWIRE_ackReceivedCount_taskids:" + _ackReceivedTaskIDSet + ",getAllTaskCount:" + getAllTaskCount());
     }
 
     @Override
@@ -264,22 +261,26 @@ public class CheckpointSpout extends BaseRichSpout {
         if(action.name().equals("COMMIT")) {
             System.out.println("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
 //            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
-            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid + 1);
+            chkptMsgid = chkptMsgid + 1;
+            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid);
+
+            msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(-101, "$checkpoint", txid, action, chkptMsgid)); // putting taskID
         }
         else {
 
             for (String boltName : componentID_taskID_map.keySet()) {
-                int task_count = componentID_taskID_map.get(boltName).size();
+//                int task_count = componentID_taskID_map.get(boltName).size();
                 for (int taskID : componentID_taskID_map.get(boltName)) {
-                    task_count--;
+//                    task_count--;
                     List<String> streamIDList = componentID_streamID_map.get(boltName);
                     for (String streamID : streamIDList) {
                         if (!streamID.equals("$checkpoint") && !streamID.equals("default")) {
                             chkptMsgid = chkptMsgid + 1;
-                            System.out.println("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + "," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
+                            System.out.println("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
 //                            collector.emit(streamID, new Values(txid, action), chkptMsgid);
                             collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
-                            msgID_streamAction_map.put(chkptMsgid, new Pair<String, String>(streamID, action.name()));// FIXME:  store chkptMsgid also
+//                            msgID_streamAction_map.put(chkptMsgid, new Pair<String, String>(streamID, action.name()));// FIXME:  store chkptMsgid also
+                            msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(taskID, streamID, txid, action, chkptMsgid));
                         }
                     }
                 }
@@ -329,9 +330,41 @@ public class CheckpointSpout extends BaseRichSpout {
         return _taskCount;
     }
 
-//    public boolean islastCommitMessage(){
-//        return CheckPointState.createFile;
-//    }
+    public class EmittedMsgDetails {
+        //        collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
+        private int _taskID;
+        private String _streamID;
+        private long _txid;
+        private Action _action;
+        private long _chkptMsgid;
 
+        EmittedMsgDetails(int taskID, String streamID, long txid, Action action, long chkptMsgid) {
+            _taskID = taskID;
+            _streamID = streamID;
+            _txid = txid;
+            _action = action;
+            _chkptMsgid = chkptMsgid;
+        }
 
+        public int gettaskID() {
+            return _taskID;
+        }
+
+        public String getstreamID() {
+            return _streamID;
+        }
+
+        public long gettxid() {
+            return _txid;
+        }
+
+        public Action getaction() {
+            return _action;
+        }
+
+        public long getchkptMsgid() {
+            return _chkptMsgid;
+        }
+
+    }
 }

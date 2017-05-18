@@ -96,17 +96,17 @@ public class FooLinearParseTopology {
                 .directGrouping("spout", PREPARE_STREAM_ID_list[0]);
         builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).setNumTasks(4).shuffleGrouping("fooPartial2")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[1]);
-//        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
-//                .allGrouping("spout","PREPARE_STREAM_ID3");
+        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).setNumTasks(4).shuffleGrouping("fooPartial3")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[2]);
 //
 //        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
-//                .allGrouping("spout","PREPARE_STREAM_ID4");
+//                .directGrouping("spout","PREPARE_STREAM_ID4");
 //
 //        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
-//                .allGrouping("spout","PREPARE_STREAM_ID5");
+//                .directGrouping("spout","PREPARE_STREAM_ID5");
 //
 ////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial3")
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial4")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
 
 

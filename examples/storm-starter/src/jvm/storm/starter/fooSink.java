@@ -39,7 +39,7 @@ public fooSink(String csvFileNameOutSink){
         _context=context;
 
         BatchedFileLogging.writeToTemp(this, this.csvFileNameOutSink);
-        ba=new BatchedFileLogging(this.csvFileNameOutSink, context.getThisComponentId());
+        ba = new BatchedFileLogging(this.csvFileNameOutSink + "-" + System.currentTimeMillis(), context.getThisComponentId());
     }
 
 

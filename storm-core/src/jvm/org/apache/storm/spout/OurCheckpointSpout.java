@@ -173,15 +173,15 @@ public int isPausedFlag = 1;
             recovering=true;
             recoveryStepInProgress=false;
             super.nextTuple();  //TODO: call to nexttuple should be non blocking (once started) bcz ack will change state from PREPARE to COMMIT
-            System.out.println("deleting_RECOVERSTATE_file");
-//            TODO:logic to delete file
-            File recoverFile = new File(Config.BASE_SIGNAL_DIR_PATH +"RECOVERSTATE");
-
-            if(recoverFile.delete()){
-                System.out.println(recoverFile.getName() + " is deleted!");
-            }else{
-                System.out.println("Delete operation is failed.");
-            }
+//            System.out.println("deleting_RECOVERSTATE_file");
+////            TODO:logic to delete file
+//            File recoverFile = new File(Config.BASE_SIGNAL_DIR_PATH +"RECOVERSTATE");
+//
+//            if(recoverFile.delete()){
+//                System.out.println(recoverFile.getName() + " is deleted!");
+//            }else{
+//                System.out.println("Delete operation is failed.");
+//            }
 
             //old logic
 //            recovering=true;
@@ -200,11 +200,6 @@ public int isPausedFlag = 1;
             pause=true; // set flag to pause spout
         }
 
-//        File f3 = new File(Config.BASE_SIGNAL_DIR_PATH +"LastCheckpointAck-");// FIX me: pattern
-//        if(f2.exists() && f3.exists()){
-//            System.out.println("###########_Pausing_CHKPT_stream_also_###########");
-//            return true;
-//        }
         File folder = new File(Config.BASE_SIGNAL_DIR_PATH);
         File[] listOfFiles = folder.listFiles();
         for (File file : listOfFiles)
@@ -238,21 +233,14 @@ public int isPausedFlag = 1;
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        declarer.declareStream("datastream", new Fields("value", "ts", "msgid"));
         declarer.declareStream(CHECKPOINT_STREAM_ID, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
 //        declarer.declareStream("PREPARE_STREAM_ID", new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-
-
         for (int i = 1; i < 50; i++) {
 //            if(streamID.contains("PREPARE_STREAM_ID")) {
             System.out.println("REWIRE_declaring_for_streamID-" + "PREPARE_STREAM_ID" + i);
             declarer.declareStream("PREPARE_STREAM_ID" + i, true, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
 //            }
         }
-
-//        declarer.declareStream("PREPARE_STREAM_ID1", true,new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-//        declarer.declareStream("PREPARE_STREAM_ID2", true,new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-//        declarer.declareStream("PREPARE_STREAM_ID6", true,new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
     }
 
     @Override
@@ -271,14 +259,6 @@ public int isPausedFlag = 1;
                 try {
                     if(file.createNewFile()) {
 //                        System.out.println("File_creation_successfull");//FIXME:SYSO REMOVED
-                        // logic go kill topology
-//                        Map conf = Utils.readStormConfig();
-//                        Client client = NimbusClient.getConfiguredClient(conf).getClient();
-//                        KillOptions killOpts = new KillOptions();
-//                        killOpts.set_wait_secs(0); // time to wait before killing
-//                        client.killTopologyWithOpts((String) conf.get(Config.TOPOLOGY_NAME), killOpts); //provide topology name
-//                        System.out.println("KILLED_TOPOLOGY"+conf.get(Config.TOPOLOGY_NAME));
-//                        System.out.println("KILLED_TOPOLOGY......");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
