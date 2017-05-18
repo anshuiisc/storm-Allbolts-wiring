@@ -8,6 +8,8 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -23,19 +25,25 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
 //public class foo extends OurStatefulBolt<String,List<Tuple>> {
 //    private static final Logger LOG = LoggerFactory.getLogger(StatefulTopology.class);
 
-    String inputFileString=null;
+    //    public static String traceVal;
+    private static Logger l;
 //    KeyValueState<String, List<Object>> kvState;
 //    long sum;
     ;
-//    public static String traceVal;
+    String inputFileString = null;
     fooXMLParser(String name) {
         this.name = name; // this is being used as key for storing internal state of bolt
 //        List<byte []> name+"STATE";
     }
 
+    public static void initLogger(Logger l_) {
+        l = l_;
+    }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         System.out.println("TEST:prepare");
+        initLogger(LoggerFactory.getLogger("APP"));
         this.collector = collector;
         _context=context;
 
@@ -65,7 +73,8 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
 //        traceVal+=name;
 //        System.out.println("TEST_traceVal_"+traceVal);
         String upVal= (input.getValueByField("value")).toString()+name;
-        System.out.println("TEST_OurStatefulBolt_execute-"+upVal);
+//        System.out.println("TEST_OurStatefulBolt_execute-"+upVal);
+        l.info("TEST_OurStatefulBolt_execute_info{}-", upVal);
 //        Utils.sleep(5);
 //        redisTuples.add(input.getValueByField("MSGID").toString().getBytes(Charset.forName("UTF-8")));
 //        System.out.println("Added_tuples_to_redisTuples_"+input.getValueByField("MSGID"));

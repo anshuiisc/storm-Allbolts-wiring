@@ -62,26 +62,11 @@ import org.slf4j.LoggerFactory;
  */
 public class FooSmartGridParseTopology {
     private static final Logger LOG = LoggerFactory.getLogger(FooSmartGridParseTopology.class);
-
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
+    private static final String[] PREPARE_STREAM_ID_list = {"PREPARE_STREAM_ID1", "PREPARE_STREAM_ID2", "PREPARE_STREAM_ID3", "PREPARE_STREAM_ID4",
+            "PREPARE_STREAM_ID5", "PREPARE_STREAM_ID6", "PREPARE_STREAM_ID7", "PREPARE_STREAM_ID9",
+            "PREPARE_STREAM_ID10", "PREPARE_STREAM_ID11", "PREPARE_STREAM_ID12", "PREPARE_STREAM_ID13",
+            "PREPARE_STREAM_ID14", "PREPARE_STREAM_ID15", "PREPARE_STREAM_ID16", "PREPARE_STREAM_ID17",
+            "PREPARE_STREAM_ID18", "PREPARE_STREAM_ID19", "PREPARE_STREAM_ID20", "PREPARE_STREAM_ID21"};
 
     public static void main(String[] args) throws Exception {
 
@@ -119,35 +104,30 @@ public class FooSmartGridParseTopology {
 //                .allGrouping("spout","PREPARE_STREAM_ID");
 
 
+        builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).shuffleGrouping("spout").directGrouping("spout", PREPARE_STREAM_ID_list[0]);
+        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2").directGrouping("spout", PREPARE_STREAM_ID_list[1]);
+        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3").directGrouping("spout", PREPARE_STREAM_ID_list[2]);
+        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4").directGrouping("spout", PREPARE_STREAM_ID_list[3]);
+        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5").directGrouping("spout", PREPARE_STREAM_ID_list[4]);
+        builder.setBolt("fooPartial7", new fooXMLParser("7"), 1).shuffleGrouping("fooPartial6").directGrouping("spout", PREPARE_STREAM_ID_list[5]);
+        builder.setBolt("fooPartial8", new fooXMLParser("8"), 1).shuffleGrouping("fooPartial7").directGrouping("spout", PREPARE_STREAM_ID_list[6]);
 
 
+        builder.setBolt("fooPartial9", new fooXMLParser("9"), 1).shuffleGrouping("fooPartial4").directGrouping("spout", PREPARE_STREAM_ID_list[7]);
 
-
-
-        builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).shuffleGrouping("spout","datastream").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial7", new fooXMLParser("7"), 1).shuffleGrouping("fooPartial6").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial8", new fooXMLParser("8"), 1).shuffleGrouping("fooPartial7").allGrouping("spout","PREPARE_STREAM_ID");;
-
-
-        builder.setBolt("fooPartial9", new fooXMLParser("9"), 1).shuffleGrouping("fooPartial4").allGrouping("spout","PREPARE_STREAM_ID");;
-
-        builder.setBolt("fooPartial10", new fooXMLParser("10"), 1).shuffleGrouping("fooPartial9").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial11", new fooXMLParser("11"), 1).shuffleGrouping("fooPartial9").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial12", new fooXMLParser("12"), 1).shuffleGrouping("fooPartial9").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial13", new fooXMLParser("13"), 1).shuffleGrouping("fooPartial12").allGrouping("spout","PREPARE_STREAM_ID");;
+        builder.setBolt("fooPartial10", new fooXMLParser("10"), 1).shuffleGrouping("fooPartial9").directGrouping("spout", PREPARE_STREAM_ID_list[8]);
+        builder.setBolt("fooPartial11", new fooXMLParser("11"), 1).shuffleGrouping("fooPartial9").directGrouping("spout", PREPARE_STREAM_ID_list[9]);
+        builder.setBolt("fooPartial12", new fooXMLParser("12"), 1).shuffleGrouping("fooPartial9").directGrouping("spout", PREPARE_STREAM_ID_list[10]);
+        builder.setBolt("fooPartial13", new fooXMLParser("13"), 1).shuffleGrouping("fooPartial12").directGrouping("spout", PREPARE_STREAM_ID_list[11]);
 
         builder.setBolt("fooPartial14", new fooXMLParser("14"), 3)
                 .shuffleGrouping("fooPartial10")
                 .shuffleGrouping("fooPartial11")
                 .shuffleGrouping("fooPartial13")
-                .allGrouping("spout","PREPARE_STREAM_ID");
+                .directGrouping("spout", PREPARE_STREAM_ID_list[12]);
 
-        builder.setBolt("fooPartial15", new fooXMLParser("15"), 3).shuffleGrouping("fooPartial14").allGrouping("spout","PREPARE_STREAM_ID");;
-        builder.setBolt("fooPartial16", new fooXMLParser("16"), 3).shuffleGrouping("fooPartial15").allGrouping("spout","PREPARE_STREAM_ID");;
+        builder.setBolt("fooPartial15", new fooXMLParser("15"), 3).shuffleGrouping("fooPartial14").directGrouping("spout", PREPARE_STREAM_ID_list[13]);
+        builder.setBolt("fooPartial16", new fooXMLParser("16"), 3).shuffleGrouping("fooPartial15").directGrouping("spout", PREPARE_STREAM_ID_list[14]);
 
 
 
@@ -155,7 +135,7 @@ public class FooSmartGridParseTopology {
 
 //        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
         builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial6")
-                .allGrouping("spout","PREPARE_STREAM_ID");
+                .directGrouping("spout", PREPARE_STREAM_ID_list[15]);
 
 
 //        builder.setBolt("fooPartial2", new foo("fooPartial2"), 1).shuffleGrouping("spout").setNumTasks(1);
@@ -194,6 +174,26 @@ public class FooSmartGridParseTopology {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

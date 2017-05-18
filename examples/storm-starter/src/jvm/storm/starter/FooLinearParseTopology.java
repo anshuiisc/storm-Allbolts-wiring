@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public class FooLinearParseTopology {
     private static final Logger LOG = LoggerFactory.getLogger(FooLinearParseTopology.class);
 
+
     private static final String[] PREPARE_STREAM_ID_list = {"PREPARE_STREAM_ID1", "PREPARE_STREAM_ID2", "PREPARE_STREAM_ID3", "PREPARE_STREAM_ID4",
             "PREPARE_STREAM_ID5", "PREPARE_STREAM_ID6", "PREPARE_STREAM_ID7", "PREPARE_STREAM_ID9",
             "PREPARE_STREAM_ID10", "PREPARE_STREAM_ID11", "PREPARE_STREAM_ID12", "PREPARE_STREAM_ID13",
@@ -92,21 +93,19 @@ public class FooLinearParseTopology {
         builder.setSpout("spout", new SampleSpoutWithCHKPTSpout(argumentClass.getInputDatasetPathName(), spoutLogFileName, argumentClass.getScalingFactor()), 1);
 
         // with direct stream
-        builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).setNumTasks(4).shuffleGrouping("spout")
+        builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).setNumTasks(1).shuffleGrouping("spout")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[0]);
-        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).setNumTasks(4).shuffleGrouping("fooPartial2")
+        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).setNumTasks(1).shuffleGrouping("fooPartial2")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[1]);
-        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).setNumTasks(4).shuffleGrouping("fooPartial3")
+        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).setNumTasks(1).shuffleGrouping("fooPartial3")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[2]);
-//
-//        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
-//                .directGrouping("spout","PREPARE_STREAM_ID4");
-//
-//        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
-//                .directGrouping("spout","PREPARE_STREAM_ID5");
+        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[3]);
+        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
+                .directGrouping("spout", PREPARE_STREAM_ID_list[4]);
 //
 ////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial4")
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial5")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
 
 

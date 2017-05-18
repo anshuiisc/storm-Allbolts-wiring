@@ -37,6 +37,7 @@ import java.util.*;
  */
 public class OurCheckpointSpout extends CheckpointSpout {
     private static final Logger LOG = LoggerFactory.getLogger(OurCheckpointSpout.class);
+    private static Logger l;
     public int val = 0;
 //    private Random rand;
 //    private long msgId = 0;
@@ -48,6 +49,10 @@ public int isPausedFlag = 1;
     Map<String, Map<String, Grouping>> spoutTargets;
     int valBound;
     private SpoutOutputCollector collector;
+
+    public static void initLogger(Logger l_) {
+        l = l_;
+    }
 
     // used for logging only
     public static void logTimeStamp(String s) {
@@ -65,6 +70,7 @@ public int isPausedFlag = 1;
 //    Map<String,List<Integer>> componentID_taskID_map;
     @Override
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+        initLogger(LoggerFactory.getLogger("APP"));
 //        this.collector = collector;
 
         ///////////////
@@ -195,7 +201,11 @@ public int isPausedFlag = 1;
 
         File f2 = new File(Config.BASE_SIGNAL_DIR_PATH +"STARTCHKPT");
         if(f2.exists()){
-            System.out.println("###########_Got_SIGNAL_to_start_CHKPT_###########");
+//            System.out.println("###########_Got_SIGNAL_to_start_CHKPT_###########");
+            l.info("###########_Got_SIGNAL_to_start_CHKPT_###########____INFO");
+            if (l.isWarnEnabled())
+                l.warn("###########_Got_SIGNAL_to_start_CHKPT_###########____WARN");
+
             logTimeStamp("STARTCHKPT,"+System.currentTimeMillis());
             pause=true; // set flag to pause spout
         }
