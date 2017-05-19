@@ -119,9 +119,9 @@ public class FooLinearParseTopology {
         Config conf = new Config();
 //        conf.setNumWorkers(6);
         conf.setNumAckers(1);
-        conf.setDebug(true);
+        conf.setDebug(false);
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
-        conf.put(Config.TOPOLOGY_DEBUG, true);
+        conf.put(Config.TOPOLOGY_DEBUG, false);
 //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
         conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));

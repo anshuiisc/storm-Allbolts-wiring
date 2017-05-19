@@ -135,6 +135,10 @@ public class CheckpointSpout extends BaseRichSpout {
 
         _ackReceivedTaskIDSet.add(msgID_streamAction_map.get(msgId).gettaskID()); // to check that ACK is received from all taskIDs
         l.info("REWIRE_ackReceivedCount_taskids:" + _ackReceivedTaskIDSet + ",size," + _ackReceivedTaskIDSet.size() + ",getAllTaskCount:" + getAllTaskCount());
+
+        OurCheckpointSpout.logTimeStamp("ACK_COUNTING," +
+                msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
+                + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name() + "," + System.currentTimeMillis());
 //        if (_ackReceivedTaskIDSet.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
         if (_ackReceivedTaskIDSet.size() == getAllTaskCount()) {
             l.warn("REWIRE_COUNT_is_equal....");

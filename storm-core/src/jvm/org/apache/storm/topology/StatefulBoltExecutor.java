@@ -98,7 +98,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
     @Override
     protected void handleCheckpoint(Tuple checkpointTuple, Action action, long txid) {
         LOG.debug("handleCheckPoint with tuple {}, action {}, txid {}", checkpointTuple, action, txid);
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointST-"+action+","+System.currentTimeMillis());
+        OurCheckpointSpout.logTimeStamp("HandleCheckpointST-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
         if (action == PREPARE) {
             if (boltInitialized) {
                 bolt.prePrepare(txid);// may need to do this on COMMIT msg
@@ -147,7 +147,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
         }
         //FIXME:AS5 if msg is on preparestream (or PREPARE msg), only ack it
         //FIXME:AS5 else frwrd to downstream (COMMIT msg)
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-"+action+","+System.currentTimeMillis());
+        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
 //        System.out.println("TEST_action_for_current_msg_"+action);//FIXME:SYSO REMOVED
         if(action==COMMIT){
 //            System.out.println("TEST_emitting_msg_on_CHECKPOINT_STREAM_ID_"+action);//FIXME:SYSO REMOVED
@@ -157,7 +157,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_only_acking_OTHER_msg_not_emitting");//FIXME:SYSO REMOVED
             collector.delegate.ack(checkpointTuple);
         }
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointACKEND-"+action+","+System.currentTimeMillis());
+        OurCheckpointSpout.logTimeStamp("HandleCheckpointACKEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
 //        System.out.println("TEST_LOG_CHKPT_ACK_FROM_STATE_EXEC:"+Thread.currentThread()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
 //        if(action.name().equals("PREPARE")){
 //            System.out.println("TEST_only_acking_PREPARE_msg_not_emitting");

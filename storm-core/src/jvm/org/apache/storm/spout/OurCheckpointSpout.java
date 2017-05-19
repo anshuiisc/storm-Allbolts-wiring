@@ -216,6 +216,7 @@ public class OurCheckpointSpout extends CheckpointSpout {
             }
             // code for ack for INIT msg
             if(CheckPointState.LastINITAck) {
+                OurCheckpointSpout.logTimeStamp("ACK_INIT," + System.currentTimeMillis());
 //                System.out.println("TEST_LOG_INIT_ACK:"+"," + System.currentTimeMillis());//FIXME:SYSO REMOVED
 //                System.out.println("INIT_is_done_check_file" + CheckPointState.LastINITAck);//FIXME:SYSO REMOVED
                 CheckPointState.LastINITAck=false;
@@ -227,7 +228,6 @@ public class OurCheckpointSpout extends CheckpointSpout {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                OurCheckpointSpout.logTimeStamp("ACK_INIT,"+System.currentTimeMillis());
             }
             //code for PREPARE msg ack
             if(CheckPointState.LastPREPAREAck) {
