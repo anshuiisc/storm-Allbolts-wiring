@@ -112,28 +112,10 @@ public class FooLinearParseTopology {
         /*
         //        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
 //        builder.setSpout("spout", new fooRandomIntegerWithCHKPTSpout());
-        builder.setBolt("fooPartial2", new fooXMLParser ("2"), 1).setNumTasks(4).shuffleGrouping("spout")
-                .shuffleGrouping("spout","PREPARE_STREAM_ID1");
-        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2")
-                .shuffleGrouping("spout","PREPARE_STREAM_ID2");
-//        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
-//                .allGrouping("spout","PREPARE_STREAM_ID3");
-//
-//        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
-//                .allGrouping("spout","PREPARE_STREAM_ID4");
-//
-//        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
-//                .allGrouping("spout","PREPARE_STREAM_ID5");
-//
-////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial3")
-                .shuffleGrouping("spout","PREPARE_STREAM_ID6");
+
 
 */
 
-//        builder.setBolt("fooPartial2", new foo("fooPartial2"), 1).shuffleGrouping("spout").setNumTasks(1);
-//        builder.setBolt("printer", new PrinterBolt(), 2).shuffleGrouping("partialsum2");
-//        builder.setBolt("total", new StatefulSumBolt("total"), 1).shuffleGrouping("printer");
         Config conf = new Config();
 //        conf.setNumWorkers(6);
         conf.setNumAckers(1);
@@ -142,7 +124,6 @@ public class FooLinearParseTopology {
         conf.put(Config.TOPOLOGY_DEBUG, true);
 //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
         conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
-//        16384
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
         conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, new Integer(1048576));
 //        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, new Integer(32));

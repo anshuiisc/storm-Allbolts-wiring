@@ -52,6 +52,7 @@ public class CheckpointSpout extends BaseRichSpout {
     public static final String CHECKPOINT_FIELD_ACTION = "action";
     private static final Logger LOG = LoggerFactory.getLogger(CheckpointSpout.class);
     private static final String TX_STATE_KEY = "__state";
+    private static Logger l;
     //    private boolean recoveryStepInProgress;
     public boolean recoveryStepInProgress;
     //    private boolean recovering;
@@ -72,6 +73,10 @@ public class CheckpointSpout extends BaseRichSpout {
     private KeyValueState<String, CheckPointState> checkpointState;
     private CheckPointState curTxState;
 
+    public static void initLogger(Logger l_) {
+        l = l_;
+    }
+
     public static boolean isCheckpoint(Tuple input) {
         //FIXME:AS7
         return CHECKPOINT_STREAM_ID.equals(input.getSourceStreamId()) || (input.getSourceStreamId().contains("PREPARE_STREAM_ID"));
@@ -79,6 +84,7 @@ public class CheckpointSpout extends BaseRichSpout {
 
     @Override
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
+        initLogger(LoggerFactory.getLogger("APP"));
         open(context, collector, loadCheckpointInterval(conf), loadCheckpointState(conf, context));
     }
 
@@ -98,22 +104,23 @@ public class CheckpointSpout extends BaseRichSpout {
 
         _ackReceivedTaskIDSet = new HashSet<>();
 
+
     }
 
     @Override
     public void nextTuple() {
-        System.out.println("TEST_CheckpointSpout_nextTuple:state:"+curTxState.getState().name());
-        System.out.println("TEST_shouldRecover_recovering_recoveryStepInProgress"+shouldRecover()+","+recovering+","+recoveryStepInProgress);
+        l.info("TEST_CheckpointSpout_nextTuple:state:" + curTxState.getState().name());
+        l.info("TEST_shouldRecover_recovering_recoveryStepInProgress" + shouldRecover() + "," + recovering + "," + recoveryStepInProgress);
         if (shouldRecover()) {
-            System.out.println("TEST_handleRecovery");
+            l.info("TEST_handleRecovery");
             handleRecovery();
             startProgress();
         } else if (shouldCheckpoint()) {
-            System.out.println("TEST_doCheckpoint");
+            l.info("TEST_doCheckpoint");
             doCheckpoint();
             startProgress();
         } else {
-            System.out.println("SLEEPING...");
+            l.info("SLEEPING...");
             Utils.sleep(sleepInterval);
         }
     }
@@ -121,16 +128,16 @@ public class CheckpointSpout extends BaseRichSpout {
     @Override
     public void ack(Object msgId) {
         LOG.debug("Got ack with txid {}, current txState {}", msgId, curTxState);
-        System.out.println("REWIRE_curTxState:" + curTxState + ",msgId:" + ((Number) msgId).longValue());
-        System.out.println("REWIRE_msgID_streamAction_map_ACK," + msgId + "," + msgID_streamAction_map.get(msgId) + ",msgID_streamAction_map_size," + msgID_streamAction_map.size());
-        System.out.println("REWIRE_custom_object_details," + msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
+        l.info("REWIRE_curTxState:" + curTxState + ",msgId:" + ((Number) msgId).longValue());
+        l.info("REWIRE_msgID_streamAction_map_ACK," + msgId + "," + msgID_streamAction_map.get(msgId) + ",msgID_streamAction_map_size," + msgID_streamAction_map.size());
+        l.info("REWIRE_custom_object_details," + msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
                 + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name());
 
         _ackReceivedTaskIDSet.add(msgID_streamAction_map.get(msgId).gettaskID()); // to check that ACK is received from all taskIDs
-        System.out.println("REWIRE_ackReceivedCount_taskids:" + _ackReceivedTaskIDSet + ",size," + _ackReceivedTaskIDSet.size() + ",getAllTaskCount:" + getAllTaskCount());
+        l.info("REWIRE_ackReceivedCount_taskids:" + _ackReceivedTaskIDSet + ",size," + _ackReceivedTaskIDSet.size() + ",getAllTaskCount:" + getAllTaskCount());
 //        if (_ackReceivedTaskIDSet.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
         if (_ackReceivedTaskIDSet.size() == getAllTaskCount()) {
-            System.out.println("REWIRE_COUNT_is_equal....");
+            l.warn("REWIRE_COUNT_is_equal....");
             if (recovering) {
                 handleRecoveryAck();
             } else {
@@ -140,7 +147,7 @@ public class CheckpointSpout extends BaseRichSpout {
             _ackReceivedTaskIDSet.clear();// reset the list for INIT acks
             msgID_streamAction_map.clear(); // clearing required for checking for COMMIT message after init and prepare phases
         } else if (msgID_streamAction_map.get(msgId).getaction().name().equals("COMMIT")) {
-            System.out.println("REWIRE_ack_for_COMMIT_msg");
+            l.warn("REWIRE_ack_for_COMMIT_msg");
             if (recovering) {
                 handleRecoveryAck();
             } else {
@@ -179,10 +186,10 @@ public class CheckpointSpout extends BaseRichSpout {
             CheckPointState txState = new CheckPointState(-1, COMMITTED);
             state.put(TX_STATE_KEY, txState);
             state.commit();
-            System.out.println("Initialized checkpoint spout state with txState {}"+ txState);
+            l.info("Initialized checkpoint spout state with txState {}" + txState);
             LOG.debug("Initialized checkpoint spout state with txState {}", txState);
         } else {
-            System.out.println("Got checkpoint spout state {}"+ state.get(TX_STATE_KEY));
+            l.info("Got checkpoint spout state {}" + state.get(TX_STATE_KEY));
             LOG.debug("Got checkpoint spout state {}", state.get(TX_STATE_KEY));
         }
         return state;
@@ -204,8 +211,8 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private boolean shouldCheckpoint() {
-        System.out.println("TEST_calling_shouldCheckpoint...");
-        System.out.println("TEST_conditions:"+!recovering+","+!checkpointStepInProgress+",("+curTxState.getState()+",||"+checkpointIntervalElapsed()+")");
+        l.info("TEST_calling_shouldCheckpoint...");
+        l.info("TEST_conditions:" + !recovering + "," + !checkpointStepInProgress + ",(" + curTxState.getState() + ",||" + checkpointIntervalElapsed() + ")");
 //        return !recovering && !checkpointStepInProgress &&
 //                (curTxState.getState() != COMMITTED || checkpointIntervalElapsed());
         //FIXME:AS3
@@ -213,7 +220,7 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private boolean checkpointIntervalElapsed() {
-        System.out.println("TEST_timer_"+(System.currentTimeMillis() - lastCheckpointTs)+":"+checkpointInterval);
+        l.info("TEST_timer_" + (System.currentTimeMillis() - lastCheckpointTs) + ":" + checkpointInterval);
         return (System.currentTimeMillis() - lastCheckpointTs) > checkpointInterval;
     }
 
@@ -226,11 +233,11 @@ public class CheckpointSpout extends BaseRichSpout {
     private void handleRecoveryAck() {
         CheckPointState nextState = curTxState.nextState(true);
         if (curTxState != nextState) {
-            System.out.println("TEST_handleRecoveryAck_"+"equal_state"+curTxState);
+            l.info("TEST_handleRecoveryAck_" + "equal_state" + curTxState);
             saveTxState(nextState);
         } else {
             LOG.debug("Recovery complete, current state {}", curTxState);
-            System.out.println("TEST_Recovery_complete_setting_recovering_FALSE"+curTxState);
+            l.info("TEST_Recovery_complete_setting_recovering_FALSE" + curTxState);
             recovering = false;
         }
     }
@@ -260,7 +267,7 @@ public class CheckpointSpout extends BaseRichSpout {
         //FIXME:LOG1
 //        System.out.println("TEST_LOG_emit_spout:"+context.getThisComponentId()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
         if(action.name().equals("COMMIT")) {
-            System.out.println("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
+            l.info("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
 //            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
             chkptMsgid = chkptMsgid + 1;
             collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid);
@@ -277,7 +284,7 @@ public class CheckpointSpout extends BaseRichSpout {
                     for (String streamID : streamIDList) {
                         if (!streamID.equals("$checkpoint") && !streamID.equals("default")) {
                             chkptMsgid = chkptMsgid + 1;
-                            System.out.println("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
+                            l.info("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
 //                            collector.emit(streamID, new Values(txid, action), chkptMsgid);
                             collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
 //                            msgID_streamAction_map.put(chkptMsgid, new Pair<String, String>(streamID, action.name()));// FIXME:  store chkptMsgid also
@@ -286,7 +293,7 @@ public class CheckpointSpout extends BaseRichSpout {
                     }
                 }
             }
-            System.out.println("REWIRE_msgID_streamAction_map:" + msgID_streamAction_map);
+            l.info("REWIRE_msgID_streamAction_map:" + msgID_streamAction_map);
 
 //            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");//FIXME:SYSO REMOVED
         }
@@ -309,7 +316,7 @@ public class CheckpointSpout extends BaseRichSpout {
 
     private void resetProgress() {
         if (recovering) {
-            System.out.println("setting_recoveryStepInProgress_false_on_ACK");
+            l.info("setting_recoveryStepInProgress_false_on_ACK");
             recoveryStepInProgress = false;
         } else {
             checkpointStepInProgress = false;

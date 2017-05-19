@@ -19,17 +19,17 @@ import java.util.Map;
 /**
  * Created by anshushukla on 28/02/17.
  */
-//public class foo extends OurStatefulBoltByteArrayTuple<String,List<OurCustomPair1>> {
+
 public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte[]>> {
 //public class foo extends OurStatefulBoltByteArray<String,List<byte[]>> {
 //public class foo extends OurStatefulBolt<String,List<Tuple>> {
 //    private static final Logger LOG = LoggerFactory.getLogger(StatefulTopology.class);
 
     //    public static String traceVal;
-    private static Logger l;
+//    private static Logger l;
 //    KeyValueState<String, List<Object>> kvState;
 //    long sum;
-    ;
+
     String inputFileString = null;
     fooXMLParser(String name) {
         this.name = name; // this is being used as key for storing internal state of bolt
@@ -42,8 +42,8 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-        System.out.println("TEST:prepare");
         initLogger(LoggerFactory.getLogger("APP"));
+        l.info("TEST:prepare");
         this.collector = collector;
         _context=context;
 
@@ -86,7 +86,8 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
             tot_length += Operations.doXMLparseOp(inputFileString);
         Values out=  new Values(upVal,input.getValueByField("MSGID").toString());
 //        Utils.sleep(2000);
-        emit(input,out);
+//        emit(input,out);
+        collector.emit(out);
 
 //        super.initState();
 

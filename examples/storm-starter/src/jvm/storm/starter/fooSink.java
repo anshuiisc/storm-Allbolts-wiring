@@ -24,17 +24,21 @@ public class fooSink extends OurStatefulBoltByteArrayTuple<String,List<byte[]>> 
     String csvFileNameOutSink;  //Full path name of the file at the sink bolt
     String name;
 
-//    fooSink(String name) {
-//        this.name = name;
-//    }
-
 public fooSink(String csvFileNameOutSink){
     this.csvFileNameOutSink = csvFileNameOutSink;
 }
 
+    //    fooSink(String name) {
+//        this.name = name;
+//    }
+    public static void initLogger(Logger l_) {
+        l = l_;
+    }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-        System.out.println("TEST:prepare");
+        initLogger(LoggerFactory.getLogger("APP"));
+        l.info("TEST:prepare");
         this.collector = collector;
         _context=context;
 
@@ -53,7 +57,7 @@ public fooSink(String csvFileNameOutSink){
 
         // user code
 
-        System.out.println("SINK_CALLED..." + input);
+        l.info("SINK_CALLED..." + input);
 
 //        String msgId = input.getStringByField("MSGID")+","+input.getStringByField("value");
         String msgId = input.getStringByField("MSGID")+",MSGID"+input.getStringByField("value");
@@ -67,10 +71,10 @@ public fooSink(String csvFileNameOutSink){
 
 
 //        String upVal= (input.getValueByField("value")).toString()+name;
-//        System.out.println("TEST_OurStatefulBolt_execute:"+upVal);
+//        l.info("TEST_OurStatefulBolt_execute:"+upVal);
 //        Utils.sleep(5);
 //        redisTuples.add(input.getValueByField("MSGID").toString().getBytes(Charset.forName("UTF-8")));
-//        System.out.println("Added_tuples_to_redisTuples_"+input.getValueByField("MSGID"));
+//        l.info("Added_tuples_to_redisTuples_"+input.getValueByField("MSGID"));
 //        kvstate.put("redisTuples", redisTuples);
 //        Values out=  new Values(upVal,input.getValueByField("MSGID").toString());
 //        Utils.sleep(2000);
@@ -88,7 +92,7 @@ public fooSink(String csvFileNameOutSink){
 //    public void initState(KeyValueState<String, List<Tuple>> state) {
 //         List<Tuple> ourOutTuples= (List<Tuple>) state.get("OUR_OUT_TUPLES");
 //         List<Tuple> ourPendingTuples= (List<Tuple>) state.get("OUR_PENDING_TUPLES");
-//        System.out.println("TEST: restored tuples from redis ourOutTuples:"+ourOutTuples.size()+"ourPendingTuples:"+ourPendingTuples.size());
+//        l.info("TEST: restored tuples from redis ourOutTuples:"+ourOutTuples.size()+"ourPendingTuples:"+ourPendingTuples.size());
 //        commitFlag=false;
 //        for (Tuple tuple : ourPendingTuples) {
 //            execute(tuple);

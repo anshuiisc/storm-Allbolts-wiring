@@ -13,6 +13,7 @@ import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.base.BaseStatefulBolt;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.util.*;
@@ -24,6 +25,7 @@ import java.util.*;
  */
 public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBolt<KeyValueState<T, V>> {
     private static final Object DRAIN_LOCK = new Object();
+    public static Logger l;
     //    private List<byte []> ourOutTuples ;
     public List<byte[]> redisTuples = new ArrayList();
     public String name;
@@ -31,7 +33,6 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     boolean commitFlag=false,drainDone=true,passThrough=false;
     KeyValueState<T, V> kvstate;
     OutputCollector collector;
-
     TopologyContext _context;
     KryoTupleSerializer kts;
     KryoTupleDeserializer ktd;
@@ -40,6 +41,9 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     Map p = new HashMap();
     private List<byte[]> ourPendingTuples;
     private boolean kryoInit;
+//    public static void initLogger(Logger l_) {
+//        l = l_;
+//    }
 
     private void initKryo() {
         if (kryoInit) return;
@@ -50,32 +54,33 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS, true);
         kvs = new KryoValuesSerializer(p);
         kts = new KryoTupleSerializer(p, _context);
+        ktd = new KryoTupleDeserializer(p, _context);
         kryoInit = true;
     }
 
     @Override
     public void prePrepare(long txid) {
-        System.out.println("TEST:prePrepare:" + Thread.currentThread().toString());
+        l.info("TEST:prePrepare:" + Thread.currentThread().toString());
 
         synchronized (DRAIN_LOCK) {
             kryoInit = false;
             drainDone=false;
-            System.out.println("TEST_prePrepare_drainDone_FALSE" + drainDone);
+            l.info("TEST_prePrepare_drainDone_FALSE" + drainDone);
         }
     }
 
 
     public  boolean preExecute(Tuple in) // logic for checking commit flag thing accumulate msg //    execute or store it
     {
-        System.out.println("TEST:preExecute:" + Thread.currentThread().toString());
+        l.info("TEST:preExecute:" + Thread.currentThread().toString());
 
 //        ourPendingTuples.add(kts.serialize(in)); // custom constr
 
-        System.out.println("TEST_preExecute_drainDone_Flag_Value" + drainDone);
+        l.info("TEST_preExecute_drainDone_Flag_Value" + drainDone);
         if (!drainDone) {
             initKryo();
             ourPendingTuples.add(kts.serialize(in)); // custom constr
-            System.out.println("TEST_preExecute_written_to_ourPendingTuples" + ourPendingTuples.size() + "," + _context.getThisComponentId());
+            l.info("TEST_preExecute_written_to_ourPendingTuples" + ourPendingTuples.size() + "," + _context.getThisComponentId());
             return false;
         }
 
@@ -85,22 +90,21 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 
     @Override
     public void preCommit(long txid) {
-        System.out.println("TEST:preCommit");
-        System.out.println("TEST_writing_tuples_to_redis_Bolt_" + _context.getThisComponentId() + ",preCommit_getThisTaskId," + _context.getThisTaskId());
-        System.out.println("ourPendingTuples:" + ourPendingTuples + "NULL_CHECK" + ourPendingTuples.size());
+        l.info("TEST:preCommit");
+        l.info("TEST_writing_tuples_to_redis_Bolt_" + _context.getThisComponentId() + ",preCommit_getThisTaskId," + _context.getThisTaskId());
+        l.info("ourPendingTuples:" + ourPendingTuples + "NULL_CHECK" + ourPendingTuples.size());
         kvstate.put((T) "OUR_PENDING_TUPLESX", (V) ourPendingTuples);
 //        //FIXME:AS8
         drainDone=true;
     }
 
-    public  void emit(Tuple input, Values out) // used by user for emitting
+    public void emit(Tuple input, Values out) // used by user for emitting, Not used Now
     {
-        System.out.println("TEST:emit:" + Thread.currentThread().toString());
-
+        l.info("TEST:emit:" + Thread.currentThread().toString());
 
 //         logic for checking ack after post processing and then emit
-        System.out.println("TEST_emit_drainDone_Flag_Value" + drainDone);
-        System.out.println("TEST_emitting_downstream");
+        l.info("TEST_emit_drainDone_Flag_Value" + drainDone);
+        l.info("TEST_emitting_downstream");
         collector.emit(out);
     }
 
@@ -112,16 +116,16 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 
     @Override
     public void initState(KeyValueState<T, V> state) {
-        System.out.println("TEST_initState_start");
+        l.info("TEST_initState_start");
         drainDone = true;
 //        //FIXME:AS8
-//        System.out.println("TEST_unsetting_drainDone_"+drainDone);
+//        l.info("TEST_unsetting_drainDone_"+drainDone);
 //        drainDone=true;
 
         File file = new File(Config.BASE_SIGNAL_DIR_PATH +"INIT_CALLED_"+Thread.currentThread().getId()+"_"+ UUID.randomUUID());
         try {
             if(file.createNewFile()) {
-                System.out.println("INIT_creation_successfull");
+                l.info("INIT_creation_successfull");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -130,23 +134,17 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         // FIXME: if state is null, then nothing to do.
         initKryo();
 
-        p.put(Config.TOPOLOGY_KRYO_FACTORY,"org.apache.storm.serialization.DefaultKryoFactory");
-        p.put(Config.TOPOLOGY_FALL_BACK_ON_JAVA_SERIALIZATION,true);
-        p.put(Config.TOPOLOGY_TUPLE_SERIALIZER,"org.apache.storm.serialization.types.ListDelegateSerializer");
-        p.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS,true);
-        ktd=new KryoTupleDeserializer(p,_context);
-        kvd=new KryoValuesDeserializer(p);
 
         kvstate=state;
 //        ourOutTuples= (List<byte[]>) kvstate.get((T) "OUR_OUT_TUPLESX", (V) new ArrayList<byte []>());
         ourPendingTuples= (List<byte[]>) kvstate.get((T) "OUR_PENDING_TUPLESX", (V) new ArrayList<byte []>());
 
-        System.out.println("TEST_restored_tuples_from_redis_for_bolt_" + _context.getThisComponentId() + "ourPendingTuples:" + ourPendingTuples.size()
+        l.info("TEST_restored_tuples_from_redis_for_bolt_" + _context.getThisComponentId() + "ourPendingTuples:" + ourPendingTuples.size()
                 + ",initState_getThisTaskId," + _context.getThisTaskId());
 
         for (int i = 0; i < ourPendingTuples.size(); i++) {
             try {
-                System.out.println("TEST_initState_ourPendingTuples_TUPLE_" + ktd.deserialize(ourPendingTuples.get(i)).toString());
+                l.info("TEST_initState_ourPendingTuples_TUPLE_" + ktd.deserialize(ourPendingTuples.get(i)).toString());
                 execute(ktd.deserialize(ourPendingTuples.get(i)));
             } catch (Exception e) {
                 e.printStackTrace();
@@ -154,6 +152,6 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         }
         ourPendingTuples.clear();
 
-        System.out.println("TEST_initState_finish");
+        l.info("TEST_initState_finish");
     }
 }

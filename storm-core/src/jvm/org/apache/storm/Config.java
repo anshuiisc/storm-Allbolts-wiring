@@ -1930,6 +1930,9 @@ public class Config extends HashMap<String, Object> {
     // added by A.S.
 //    public static final String BASE_SIGNAL_DIR_PATH = "/Users/anshushukla/data/output/SIGNALS/";
     public static final String BASE_SIGNAL_DIR_PATH = "/home/anshu/data/storm/output/SIGNALS/";
+    // added by A.S.
+//    public static final String BASE_SIGNAL_DIR_PATH = "/Users/anshushukla/data/output/SIGNALS/";
+//    public static final String BASE_SIGNAL_DIR_PATH = "/home/anshu/data/storm/output/SIGNALS/";
     //DO NOT CHANGE UNLESS WE ADD IN STATE NOT STORED IN THE PARENT CLASS
     private static final long serialVersionUID = -1550278723792864455L;
 

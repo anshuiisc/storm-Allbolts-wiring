@@ -64,7 +64,7 @@ public class OurStateSerializer<V> implements Serializer<V> {
 
     @Override
     public byte[] serialize(V obj) {
-        System.out.println("TEST:OurStateSerializer.serialize");
+//        System.out.println("TEST:OurStateSerializer.serialize");
         output.get().clear();
         Output output = new Output(new ByteArrayOutputStream());
         kryo.get().writeObject(output, obj);
