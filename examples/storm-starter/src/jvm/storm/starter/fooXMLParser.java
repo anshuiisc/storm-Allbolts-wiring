@@ -48,8 +48,8 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
         _context=context;
 
         //        xml file specific code
-        //        String inputXMLpath="/home/anshu/data/storm/dataset/tempSAX.xml";
-        String inputXMLpath="/Users/anshushukla/Downloads/Storm/storm-1.0.3/examples/storm-starter/src/jvm/org/apache/storm/starter/bolt/operation/tempSAX.xml";
+        String inputXMLpath = "/home/anshu/data/storm/dataset/tempSAX.xml";
+//        String inputXMLpath="/Users/anshushukla/Downloads/Storm/storm-1.0.3/examples/storm-starter/src/jvm/org/apache/storm/starter/bolt/operation/tempSAX.xml";
 
         try {
             inputFileString= LatencyConfig.readFileWithSize(inputXMLpath, StandardCharsets.UTF_8);
