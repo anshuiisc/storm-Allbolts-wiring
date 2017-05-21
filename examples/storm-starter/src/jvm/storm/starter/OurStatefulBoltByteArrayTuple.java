@@ -2,11 +2,13 @@ package storm.starter;
 
 //import org.apache.commons.collections.map.HashedMap;
 
+import com.google.common.base.Stopwatch;
 import org.apache.storm.Config;
 import org.apache.storm.serialization.KryoTupleDeserializer;
 import org.apache.storm.serialization.KryoTupleSerializer;
 import org.apache.storm.serialization.KryoValuesDeserializer;
 import org.apache.storm.serialization.KryoValuesSerializer;
+import org.apache.storm.spout.OurCheckpointSpout;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -17,6 +19,8 @@ import org.slf4j.Logger;
 
 import java.io.File;
 import java.util.*;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 //import org.eclipse.jetty.util.ArrayQueue;
 
@@ -94,6 +98,7 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         l.info("TEST_writing_tuples_to_redis_Bolt_" + _context.getThisComponentId() + ",preCommit_getThisTaskId," + _context.getThisTaskId());
         l.info("ourPendingTuples:" + ourPendingTuples + "NULL_CHECK" + ourPendingTuples.size());
         kvstate.put((T) "OUR_PENDING_TUPLESX", (V) ourPendingTuples);
+        OurCheckpointSpout.logTimeStamp("preCommitNumTuples," + Thread.currentThread() + "," + ourPendingTuples.size());
 //        //FIXME:AS8
         drainDone=true;
     }
@@ -135,13 +140,18 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         initKryo();
 
 
+        Stopwatch stopwatch1 = Stopwatch.createStarted();//extra
         kvstate=state;
 //        ourOutTuples= (List<byte[]>) kvstate.get((T) "OUR_OUT_TUPLESX", (V) new ArrayList<byte []>());
         ourPendingTuples= (List<byte[]>) kvstate.get((T) "OUR_PENDING_TUPLESX", (V) new ArrayList<byte []>());
+        stopwatch1.stop(); // optional
+        OurCheckpointSpout.logTimeStamp("initState_kvstate_get_Stopwatch," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
 
         l.info("TEST_restored_tuples_from_redis_for_bolt_" + _context.getThisComponentId() + "ourPendingTuples:" + ourPendingTuples.size()
                 + ",initState_getThisTaskId," + _context.getThisTaskId());
+        OurCheckpointSpout.logTimeStamp("initRestoredNumTuples," + Thread.currentThread() + "," + ourPendingTuples.size());
 
+        Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
         for (int i = 0; i < ourPendingTuples.size(); i++) {
             try {
                 l.info("TEST_initState_ourPendingTuples_TUPLE_" + ktd.deserialize(ourPendingTuples.get(i)).toString());
@@ -151,6 +161,8 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
             }
         }
         ourPendingTuples.clear();
+        stopwatch2.stop(); // optional
+        OurCheckpointSpout.logTimeStamp("initState_execute_loop_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
 
         l.info("TEST_initState_finish");
     }

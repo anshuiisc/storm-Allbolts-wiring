@@ -53,7 +53,7 @@ public class OurCheckpointSpout extends CheckpointSpout {
     // used for logging only
     public static void logTimeStamp(String s) {
         try {
-            String filename = Config.BASE_SIGNAL_DIR_PATH + "LOGTS";
+            String filename = Config.BASE_SIGNAL_DIR_PATH + "LOGTS-" + Thread.currentThread();
             FileWriter fw = new FileWriter(filename, true); //the true will append the new data
             fw.write(s + "\n");//appends the string to the file
             fw.close();
@@ -146,8 +146,8 @@ public class OurCheckpointSpout extends CheckpointSpout {
 
         File f2 = new File(Config.BASE_SIGNAL_DIR_PATH +"STARTCHKPT");
         if(f2.exists()){
+            logTimeStamp("STARTCHKPT," + System.currentTimeMillis());
             l.info("###########_Got_SIGNAL_to_start_CHKPT_###########");
-            logTimeStamp("STARTCHKPT,"+System.currentTimeMillis());
             pause=true; // set flag to pause spout
         }
 

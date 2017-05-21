@@ -141,6 +141,9 @@ public class CheckpointSpout extends BaseRichSpout {
                 + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name() + "," + System.currentTimeMillis());
 //        if (_ackReceivedTaskIDSet.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
         if (_ackReceivedTaskIDSet.size() == getAllTaskCount()) {
+            OurCheckpointSpout.logTimeStamp("ACK_FINAL," +
+                    msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
+                    + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name() + "," + System.currentTimeMillis());
             l.warn("REWIRE_COUNT_is_equal....");
             if (recovering) {
                 handleRecoveryAck();
@@ -151,6 +154,9 @@ public class CheckpointSpout extends BaseRichSpout {
             _ackReceivedTaskIDSet.clear();// reset the list for INIT acks
             msgID_streamAction_map.clear(); // clearing required for checking for COMMIT message after init and prepare phases
         } else if (msgID_streamAction_map.get(msgId).getaction().name().equals("COMMIT")) {
+            OurCheckpointSpout.logTimeStamp("ACK_FINAL," +
+                    msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
+                    + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name() + "," + System.currentTimeMillis());
             l.warn("REWIRE_ack_for_COMMIT_msg");
             if (recovering) {
                 handleRecoveryAck();
@@ -166,12 +172,19 @@ public class CheckpointSpout extends BaseRichSpout {
 
     @Override
     public void fail(Object msgId) {
-        LOG.debug("Got fail with msgid {}", msgId);
-        if (!recovering) {
-            LOG.debug("Checkpoint failed, will trigger recovery");
-            recovering = true;
-        }
-        resetProgress();
+
+        EmittedMsgDetails emd = msgID_streamAction_map.get(msgId);
+//        collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
+        if (l.isWarnEnabled())
+            l.warn("Emitting_failed_message," + emd.getstreamID() + ",TaskID," + emd.gettaskID() + "," + emd.getaction());
+        collector.emitDirect(emd.gettaskID(), emd.getstreamID(), new Values(emd.gettxid(), emd.getaction()), msgId);
+
+//        LOG.debug("Got fail with msgid {}", msgId);
+//        if (!recovering) {
+//            LOG.debug("Checkpoint failed, will trigger recovery");
+//            recovering = true;
+//        }
+//        resetProgress();
     }
 
     @Override
@@ -256,7 +269,6 @@ public class CheckpointSpout extends BaseRichSpout {
         Action action = curTxState.nextAction(false);
 //        System.out.println("TEST_CheckpointSpout_doCheckpoint:action:"+action.name());//FIXME:SYSO REMOVED
         emit(curTxState.getTxid(), action);
-        OurCheckpointSpout.logTimeStamp(action+","+System.currentTimeMillis());
     }
 
     private void handleCheckpointAck() {
@@ -266,6 +278,7 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private void emit(long txid, Action action) {
+        OurCheckpointSpout.logTimeStamp(action + "_SENT," + System.currentTimeMillis());
         LOG.debug("Current state {}, emitting txid {}, action {}", curTxState, txid, action);
 //        System.out.println("TEST_emitting_Current_state {}, emitting txid {}, action {}"+","+ curTxState+","+ txid+","+ action);//FIXME:SYSO REMOVED
         //FIXME:LOG1

@@ -17,6 +17,7 @@
  */
 package org.apache.storm.topology;
 
+import com.google.common.base.Stopwatch;
 import org.apache.storm.spout.CheckpointSpout;
 import org.apache.storm.spout.OurCheckpointSpout;
 import org.apache.storm.state.State;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.storm.spout.CheckPointState.Action;
 import static org.apache.storm.spout.CheckPointState.Action.*;
 
@@ -101,8 +103,16 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
         OurCheckpointSpout.logTimeStamp("HandleCheckpointST-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
         if (action == PREPARE) {
             if (boltInitialized) {
+                Stopwatch stopwatch1 = Stopwatch.createStarted();//extra
                 bolt.prePrepare(txid);// may need to do this on COMMIT msg
+                stopwatch1.stop(); // optional
+                OurCheckpointSpout.logTimeStamp("prePrepare_Stopwatch," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
+
+                Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
                 state.prepareCommit(txid);
+                stopwatch2.stop(); // optional
+                OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+
                 preparedTuples.addAll(collector.ackedTuples());
             } else {
                 /*
@@ -114,8 +124,16 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
                 return;
             }
         } else if (action == COMMIT) {
+            Stopwatch stopwatch1 = Stopwatch.createStarted();//extra
             bolt.preCommit(txid);
+            stopwatch1.stop(); // optional
+            OurCheckpointSpout.logTimeStamp("preCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
+
+            Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
             state.commit(txid);
+            stopwatch2.stop(); // optional
+            OurCheckpointSpout.logTimeStamp("commit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+
             ack(preparedTuples);
         } else if (action == ROLLBACK) {
 //            System.out.println("\n\n\n\n\t\t\t\t\tTEST_ENTERED_IN_ROLLBACK_STATE##########");//FIXME:SYSO REMOVED
@@ -147,7 +165,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
         }
         //FIXME:AS5 if msg is on preparestream (or PREPARE msg), only ack it
         //FIXME:AS5 else frwrd to downstream (COMMIT msg)
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
+//        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
 //        System.out.println("TEST_action_for_current_msg_"+action);//FIXME:SYSO REMOVED
         if(action==COMMIT){
 //            System.out.println("TEST_emitting_msg_on_CHECKPOINT_STREAM_ID_"+action);//FIXME:SYSO REMOVED
@@ -157,7 +175,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_only_acking_OTHER_msg_not_emitting");//FIXME:SYSO REMOVED
             collector.delegate.ack(checkpointTuple);
         }
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointACKEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
+        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
 //        System.out.println("TEST_LOG_CHKPT_ACK_FROM_STATE_EXEC:"+Thread.currentThread()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
 //        if(action.name().equals("PREPARE")){
 //            System.out.println("TEST_only_acking_PREPARE_msg_not_emitting");

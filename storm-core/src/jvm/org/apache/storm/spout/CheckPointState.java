@@ -37,48 +37,11 @@ import static org.apache.storm.spout.CheckPointState.State.*;
  * </p>
  */
 public class CheckPointState {
-    private long txid;
-    private State state;
-
     public static boolean  LastCheckpointAck=false;
     public static boolean  LastINITAck=false;
     public static boolean  LastPREPAREAck=false;
-
-    public enum State {
-        /**
-         * The checkpoint spout has committed the transaction.
-         */
-        COMMITTED,
-        /**
-         * The checkpoint spout has started committing the transaction
-         * and the commit is in progress.
-         */
-        COMMITTING,
-        /**
-         * The checkpoint spout has started preparing the transaction for commit
-         * and the prepare is in progress.
-         */
-        PREPARING
-    }
-
-    public enum Action {
-        /**
-         * prepare transaction for commit
-         */
-        PREPARE,
-        /**
-         * commit the previously prepared transaction
-         */
-        COMMIT,
-        /**
-         * rollback the previously prepared transaction
-         */
-        ROLLBACK,
-        /**
-         * initialize the state
-         */
-        INITSTATE
-    }
+    private long txid;
+    private State state;
 
     public CheckPointState(long txid, State state) {
         this.txid = txid;
@@ -138,8 +101,8 @@ public class CheckPointState {
         Action action;
         switch (state) {
             case PREPARING:
-                action = recovering ? Action.PREPARE : Action.PREPARE;
 //                action = recovering ? Action.ROLLBACK : Action.PREPARE;
+                action = recovering ? Action.PREPARE : Action.PREPARE;
                 break;
             case COMMITTING:
                 action = Action.COMMIT;
@@ -178,5 +141,41 @@ public class CheckPointState {
                 "txid=" + txid +
                 ", state=" + state +
                 '}';
+    }
+
+    public enum State {
+        /**
+         * The checkpoint spout has committed the transaction.
+         */
+        COMMITTED,
+        /**
+         * The checkpoint spout has started committing the transaction
+         * and the commit is in progress.
+         */
+        COMMITTING,
+        /**
+         * The checkpoint spout has started preparing the transaction for commit
+         * and the prepare is in progress.
+         */
+        PREPARING
+    }
+
+    public enum Action {
+        /**
+         * prepare transaction for commit
+         */
+        PREPARE,
+        /**
+         * commit the previously prepared transaction
+         */
+        COMMIT,
+        /**
+         * rollback the previously prepared transaction
+         */
+        ROLLBACK,
+        /**
+         * initialize the state
+         */
+        INITSTATE
     }
 }
