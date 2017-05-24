@@ -108,11 +108,11 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
                 stopwatch1.stop(); // optional
                 OurCheckpointSpout.logTimeStamp("prePrepare_Stopwatch," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
 
-                Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
-                state.prepareCommit(txid);
-                stopwatch2.stop(); // optional
-                preparedTuples.addAll(collector.ackedTuples());
-                OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+//                Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
+//                state.prepareCommit(txid);
+//                stopwatch2.stop(); // optional
+//                preparedTuples.addAll(collector.ackedTuples());
+//                OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
             } else {
                 /*
                  * May be the task restarted in the middle and the state needs be initialized.
@@ -123,16 +123,22 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
                 return;
             }
         } else if (action == COMMIT) {
-            Stopwatch stopwatch1 = Stopwatch.createStarted();//extra
-            bolt.preCommit(txid);
-            stopwatch1.stop(); // optional
+            Stopwatch stopwatch1 = Stopwatch.createStarted();
+            bolt.preCommit(txid);  // put to internal state (not to redis)
+            stopwatch1.stop();
             OurCheckpointSpout.logTimeStamp("preCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
 
-            Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
-            state.commit(txid);
-            stopwatch2.stop(); // optional
+            Stopwatch stopwatch2 = Stopwatch.createStarted();//moved from prepare logic
+            state.prepareCommit(txid); // written to redis as prepared state
+            preparedTuples.addAll(collector.ackedTuples());
+            stopwatch2.stop();
+            OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+
+            Stopwatch stopwatch3 = Stopwatch.createStarted();//extra
+            state.commit(txid);   // written to redis as commited state
             ack(preparedTuples);
-            OurCheckpointSpout.logTimeStamp("commit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+            stopwatch3.stop();
+            OurCheckpointSpout.logTimeStamp("commit_Stopwatch," + Thread.currentThread() + "," + stopwatch3.elapsed(MILLISECONDS));
         } else if (action == ROLLBACK) {
 //            System.out.println("\n\n\n\n\t\t\t\t\tTEST_ENTERED_IN_ROLLBACK_STATE##########");//FIXME:SYSO REMOVED
             bolt.preRollback();
@@ -145,15 +151,26 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 
 //            bolt.initState((T) state);
             if (!boltInitialized) {
-                // FIXME:AS9 Ordering to be changed
-                bolt.initState((T) state);
                 boltInitialized = true;
+                collector.delegate.ack(checkpointTuple);
+                bolt.initState((T) state);
+
                 LOG.debug("{} pending tuples to process", pendingTuples.size());
                 for (Tuple tuple : pendingTuples) {
                     doExecute(tuple);
                 }
                 pendingTuples.clear();
-                collector.delegate.ack(checkpointTuple);
+
+
+                // FIXME:AS9 Ordering to be changed : OLD ordering
+//                bolt.initState((T) state);
+//                boltInitialized = true;
+//                LOG.debug("{} pending tuples to process", pendingTuples.size());
+//                for (Tuple tuple : pendingTuples) {
+//                    doExecute(tuple);
+//                }
+//                pendingTuples.clear();
+//                collector.delegate.ack(checkpointTuple);
             } else {
                 LOG.debug("Bolt state is already initialized, ignoring tuple {}, action {}, txid {}",
                           checkpointTuple, action, txid);

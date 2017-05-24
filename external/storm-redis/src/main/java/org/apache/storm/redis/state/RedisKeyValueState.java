@@ -17,11 +17,9 @@
  */
 package org.apache.storm.redis.state;
 
-import com.google.common.base.Stopwatch;
 import org.apache.storm.redis.common.config.JedisPoolConfig;
 import org.apache.storm.redis.common.container.JedisCommandsContainerBuilder;
 import org.apache.storm.redis.common.container.JedisCommandsInstanceContainer;
-import org.apache.storm.spout.OurCheckpointSpout;
 import org.apache.storm.state.DefaultStateSerializer;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.state.Serializer;
@@ -36,8 +34,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A redis based implementation that persists the state in Redis.
@@ -121,26 +117,26 @@ public class RedisKeyValueState<K, V> implements KeyValueState<K, V> {
     public void put(K key, V value) {
         LOG.debug("put key '{}', value '{}'", key, value);
         // Actual code
-//        pendingPrepare.put(encode(keySerializer.serialize(key)),
-//                           encode(valueSerializer.serialize(value)));
+        pendingPrepare.put(encode(keySerializer.serialize(key)),
+                encode(valueSerializer.serialize(value)));
 
         // Case1- for logging
-        Stopwatch stopwatch1 = Stopwatch.createStarted();
-        byte[] keySerialize = keySerializer.serialize(key);
-        byte[] valSerialize = valueSerializer.serialize(value);
-        stopwatch1.stop(); // optional
-        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_serialize," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
-
-        Stopwatch stopwatch2 = Stopwatch.createStarted();
-        String keyEncode = encode(keySerialize);
-        String valEncode = encode(valSerialize);
-        stopwatch2.stop(); // optional
-        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_encode," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
-
-        Stopwatch stopwatch3 = Stopwatch.createStarted();
-        pendingPrepare.put(keyEncode, valEncode);
-        stopwatch3.stop(); // optional
-        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_put," + Thread.currentThread() + "," + stopwatch3.elapsed(MILLISECONDS));
+//        Stopwatch stopwatch1 = Stopwatch.createStarted();
+//        byte[] keySerialize = keySerializer.serialize(key);
+//        byte[] valSerialize = valueSerializer.serialize(value);
+//        stopwatch1.stop(); // optional
+//        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_serialize," + Thread.currentThread() + "," + stopwatch1.elapsed(MILLISECONDS));
+//
+//        Stopwatch stopwatch2 = Stopwatch.createStarted();
+//        String keyEncode = encode(keySerialize);
+//        String valEncode = encode(valSerialize);
+//        stopwatch2.stop(); // optional
+//        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_encode," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
+//
+//        Stopwatch stopwatch3 = Stopwatch.createStarted();
+//        pendingPrepare.put(keyEncode, valEncode);
+//        stopwatch3.stop(); // optional
+//        OurCheckpointSpout.logTimeStamp("RedisKeyValueState_put," + Thread.currentThread() + "," + stopwatch3.elapsed(MILLISECONDS));
     }
 
     @Override
