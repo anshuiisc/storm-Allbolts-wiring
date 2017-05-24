@@ -111,9 +111,8 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
                 Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
                 state.prepareCommit(txid);
                 stopwatch2.stop(); // optional
-                OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
-
                 preparedTuples.addAll(collector.ackedTuples());
+                OurCheckpointSpout.logTimeStamp("prepareCommit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
             } else {
                 /*
                  * May be the task restarted in the middle and the state needs be initialized.
@@ -132,9 +131,8 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
             Stopwatch stopwatch2 = Stopwatch.createStarted();//extra
             state.commit(txid);
             stopwatch2.stop(); // optional
-            OurCheckpointSpout.logTimeStamp("commit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
-
             ack(preparedTuples);
+            OurCheckpointSpout.logTimeStamp("commit_Stopwatch," + Thread.currentThread() + "," + stopwatch2.elapsed(MILLISECONDS));
         } else if (action == ROLLBACK) {
 //            System.out.println("\n\n\n\n\t\t\t\t\tTEST_ENTERED_IN_ROLLBACK_STATE##########");//FIXME:SYSO REMOVED
             bolt.preRollback();
@@ -147,7 +145,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 
 //            bolt.initState((T) state);
             if (!boltInitialized) {
-                // FIXME:AS9
+                // FIXME:AS9 Ordering to be changed
                 bolt.initState((T) state);
                 boltInitialized = true;
                 LOG.debug("{} pending tuples to process", pendingTuples.size());
