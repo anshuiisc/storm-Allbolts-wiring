@@ -64,26 +64,6 @@ import org.slf4j.LoggerFactory;
 public class FooLinearParseTopologywoFooSink {
     private static final Logger LOG = LoggerFactory.getLogger(FooLinearParseTopologywoFooSink.class);
 
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
-
     public static void main(String[] args) throws Exception {
 
         /** Common Code begins **/
@@ -134,7 +114,7 @@ public class FooLinearParseTopologywoFooSink {
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, true);
 //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10); //FIXME:AS4
 //        16384
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
         conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, new Integer(1048576));
@@ -160,6 +140,26 @@ public class FooLinearParseTopologywoFooSink {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

@@ -64,26 +64,6 @@ import org.slf4j.LoggerFactory;
 public class FooDoubleDiamondTopology {
     private static final Logger LOG = LoggerFactory.getLogger(FooDoubleDiamondTopology.class);
 
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
-
     public static void main(String[] args) throws Exception {
 
         /** Common Code begins **/
@@ -141,7 +121,7 @@ public class FooDoubleDiamondTopology {
         conf.setDebug(true);
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, true);
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,30000);
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10);
 //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
         conf.put(Config.TOPOLOGY_STATE_PROVIDER,"org.apache.storm.redis.state.RedisKeyValueStateProvider");
 
@@ -162,6 +142,26 @@ public class FooDoubleDiamondTopology {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

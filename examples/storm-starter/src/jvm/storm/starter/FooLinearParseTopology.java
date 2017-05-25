@@ -89,7 +89,8 @@ public class FooLinearParseTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
 
-
+        //        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
+//        builder.setSpout("spout", new fooRandomIntegerWithCHKPTSpout());
         builder.setSpout("spout", new SampleSpoutWithCHKPTSpout(argumentClass.getInputDatasetPathName(), spoutLogFileName, argumentClass.getScalingFactor()), 1);
 
         // with direct stream
@@ -103,42 +104,29 @@ public class FooLinearParseTopology {
                 .directGrouping("spout", PREPARE_STREAM_ID_list[3]);
         builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[4]);
-//
+
 ////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
         builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial5")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
 
-
-        /*
-        //        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
-//        builder.setSpout("spout", new fooRandomIntegerWithCHKPTSpout());
-
-
-*/
-
         Config conf = new Config();
-//        conf.setNumWorkers(6);
         conf.setNumAckers(1);
         conf.setDebug(false);
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, false);
-//        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10); //FIXME:AS4
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
         conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, new Integer(1048576));
-//        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, new Integer(32));
-
-        conf.put(Config.TOPOLOGY_BUILTIN_METRICS_BUCKET_SIZE_SECS,5);
         conf.put(Config.TOPOLOGY_STATE_PROVIDER,"org.apache.storm.redis.state.RedisKeyValueStateProvider");
 
+        //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
+//        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, new Integer(32));
+//        conf.put(Config.TOPOLOGY_BUILTIN_METRICS_BUCKET_SIZE_SECS,5);
 
-        System.out.println("TEST: inside main");
 
         if (argumentClass.getDeploymentMode().equals("C")) {
-//            conf.setNumWorkers(1);
-            conf.setNumWorkers(6);
+//            conf.setNumWorkers(6);
             StormSubmitter.submitTopology(argumentClass.getTopoName(), conf, builder.createTopology());
-//            Arrays.asList("REWIRE_FooLinearParseTopology_get_bolts"+builder.createTopology().get_bolts());
         }
 
         else {

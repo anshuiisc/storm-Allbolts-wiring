@@ -62,12 +62,9 @@ public class OurCheckpointSpout extends CheckpointSpout {
         }
     }
 
-    //    Map<String,List<String>> componentID_streamID_map;
-//    Map<String,List<Integer>> componentID_taskID_map;
     @Override
     public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
         initLogger(LoggerFactory.getLogger("APP"));
-//        this.collector = collector;
 
 ///////////////
         Set<String> componentID_set = context.getComponentIds();
@@ -85,7 +82,6 @@ public class OurCheckpointSpout extends CheckpointSpout {
 
         for (String streamID : spoutTargets.keySet()) {
             Map<String, Grouping> boltNameGroupingMap = spoutTargets.get(streamID);
-//			componentID_streamID_map.put(streamID,boltNameGroupingMap.keySet());
 
             for (String boltname : boltNameGroupingMap.keySet()) {
                 if (!componentID_streamID_map.containsKey(boltname)) {
@@ -104,8 +100,6 @@ public class OurCheckpointSpout extends CheckpointSpout {
 //		l.info("REWIRE_getThisTargets:"+ Arrays.asList(context.getThisTargets()));
 //		l.info("REWIRE_getThisInputFields:"+context.getThisInputFields());
 /////////////
-
-
         super.open(conf,context,collector);
     }
 
@@ -186,17 +180,14 @@ public class OurCheckpointSpout extends CheckpointSpout {
         declarer.declareStream(CHECKPOINT_STREAM_ID, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
 //        declarer.declareStream("PREPARE_STREAM_ID", new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
         for (int i = 1; i < 50; i++) {
-//            if(streamID.contains("PREPARE_STREAM_ID")) {
             l.info("REWIRE_declaring_for_streamID-" + "PREPARE_STREAM_ID" + i);
             declarer.declareStream("PREPARE_STREAM_ID" + i, true, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-//            }
         }
     }
 
     @Override
     public void ack(Object msgId) {
 //        LOG.debug("Got ACK for msgId : " + msgId);
-//        if ( isCheckpointAckBymsgId(msgId)) {
         OurCheckpointSpout.logTimeStamp("ACK_OurCheckpointSpout_RECVD" + msgId + "," + System.currentTimeMillis());
         l.info("ACK_for_CHECKPOINT_STREAM_ID msgId:" + msgId);
             super.ack(msgId);

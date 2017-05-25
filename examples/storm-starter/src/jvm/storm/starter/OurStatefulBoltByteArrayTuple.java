@@ -14,7 +14,6 @@ import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.base.BaseStatefulBolt;
 import org.apache.storm.tuple.Tuple;
-import org.apache.storm.tuple.Values;
 import org.slf4j.Logger;
 
 import java.io.File;
@@ -34,7 +33,7 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     public List<byte[]> redisTuples = new ArrayList();
     public String name;
     //FIXME: our declared vars start
-    boolean commitFlag=false,drainDone=true,passThrough=false;
+    boolean drainDone = true;
     KeyValueState<T, V> kvstate;
     OutputCollector collector;
     TopologyContext _context;
@@ -45,9 +44,7 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     Map p = new HashMap();
     private List<byte[]> ourPendingTuples;
     private boolean kryoInit;
-//    public static void initLogger(Logger l_) {
-//        l = l_;
-//    }
+
 
     private void initKryo() {
         if (kryoInit) return;
@@ -65,21 +62,16 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     @Override
     public void prePrepare(long txid) {
         l.info("TEST:prePrepare:" + Thread.currentThread().toString());
-
-        synchronized (DRAIN_LOCK) {
             kryoInit = false;
             drainDone=false;
-            l.info("TEST_prePrepare_drainDone_FALSE" + drainDone);
-        }
+        l.info("TEST_prePrepare_drainDone_FALSE" + drainDone);
     }
 
 
     public  boolean preExecute(Tuple in) // logic for checking commit flag thing accumulate msg //    execute or store it
     {
         l.info("TEST:preExecute:" + Thread.currentThread().toString());
-
 //        ourPendingTuples.add(kts.serialize(in)); // custom constr
-
         l.info("TEST_preExecute_drainDone_Flag_Value" + drainDone);
         if (!drainDone) {
             initKryo();
@@ -99,19 +91,16 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
         l.info("ourPendingTuples:" + ourPendingTuples + "NULL_CHECK" + ourPendingTuples.size());
         kvstate.put((T) "OUR_PENDING_TUPLESX", (V) ourPendingTuples);
         OurCheckpointSpout.logTimeStamp("preCommitNumTuples," + Thread.currentThread() + "," + ourPendingTuples.size());
-//        //FIXME:AS8
         drainDone=true;
     }
 
-    public void emit(Tuple input, Values out) // used by user for emitting, Not used Now
-    {
-        l.info("TEST:emit:" + Thread.currentThread().toString());
-
-//         logic for checking ack after post processing and then emit
-        l.info("TEST_emit_drainDone_Flag_Value" + drainDone);
-        l.info("TEST_emitting_downstream");
-        collector.emit(out);
-    }
+//    public void emit(Tuple input, Values out) // used by user for emitting, Not used Now
+//    {
+////         logic for checking ack after post processing and then emit
+//        l.info("TEST_emit_drainDone_Flag_Value" + drainDone);
+//        l.info("TEST_emitting_downstream");
+//        collector.emit(out);
+//    }
 
 
 
@@ -123,9 +112,6 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
     public void initState(KeyValueState<T, V> state) {
         l.info("TEST_initState_start");
         drainDone = true;
-//        //FIXME:AS8
-//        l.info("TEST_unsetting_drainDone_"+drainDone);
-//        drainDone=true;
 
         File file = new File(Config.BASE_SIGNAL_DIR_PATH +"INIT_CALLED_"+Thread.currentThread().getId()+"_"+ UUID.randomUUID());
         try {
@@ -138,7 +124,6 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
 
         // FIXME: if state is null, then nothing to do.
         initKryo();
-
 
         Stopwatch stopwatch1 = Stopwatch.createStarted();//extra
         kvstate=state;

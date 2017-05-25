@@ -6,8 +6,6 @@ import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
-import org.apache.storm.utils.TupleUtils;
-import org.apache.storm.utils.Utils;
 
 import java.util.List;
 import java.util.Map;
@@ -61,8 +59,8 @@ public class foo extends OurStatefulBoltByteArrayTuple<String,List<byte[]>> {
 //        kvstate.put(name,sum);
         Values out=  new Values(upVal,input.getValueByField("MSGID").toString());
 //        Utils.sleep(2000);
-        emit(input,out);
-
+//        emit(input,out);
+        collector.emit(out);
 //        super.initState();
 
     }

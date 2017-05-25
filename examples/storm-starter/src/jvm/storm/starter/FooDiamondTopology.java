@@ -24,7 +24,6 @@ import org.apache.storm.generated.StormTopology;
 import org.apache.storm.starter.genevents.factory.ArgumentClass;
 import org.apache.storm.starter.genevents.factory.ArgumentParser;
 import org.apache.storm.starter.spout.SampleSpoutWithCHKPTSpout;
-import org.apache.storm.starter.spout.Sink;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -65,26 +64,6 @@ import java.util.UUID;
  */
 public class FooDiamondTopology {
     private static final Logger LOG = LoggerFactory.getLogger(FooDiamondTopology.class);
-
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -134,7 +113,7 @@ public class FooDiamondTopology {
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, true);
 //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10); //FIXME:AS4
 //        16384
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
         conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, new Integer(1048576));
@@ -163,6 +142,26 @@ public class FooDiamondTopology {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

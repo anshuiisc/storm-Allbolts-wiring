@@ -94,7 +94,7 @@ public class CheckpointSpout extends BaseRichSpout {
         this.context = context;
         this.collector = collector;
         this.checkpointInterval = checkpointInterval;
-        this.sleepInterval = checkpointInterval / 100;
+        this.sleepInterval = checkpointInterval / 10;
         this.checkpointState = checkpointState;
         this.curTxState = checkpointState.get(TX_STATE_KEY);
         lastCheckpointTs = 0;
@@ -139,7 +139,6 @@ public class CheckpointSpout extends BaseRichSpout {
         OurCheckpointSpout.logTimeStamp("ACK_COUNTING," +
                 msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
                 + ",msgID," + msgID_streamAction_map.get(msgId).getchkptMsgid() + ",Action," + msgID_streamAction_map.get(msgId).getaction().name() + "," + System.currentTimeMillis());
-//        if (_ackReceivedTaskIDSet.size() == getAllTaskCount() && msgID_streamAction_map.size() != 0) {
         if (_ackReceivedTaskIDSet.size() == getAllTaskCount()) {
             OurCheckpointSpout.logTimeStamp("ACK_FINAL," +
                     msgID_streamAction_map.get(msgId).getstreamID() + ",taskID," + msgID_streamAction_map.get(msgId).gettaskID()
@@ -285,7 +284,6 @@ public class CheckpointSpout extends BaseRichSpout {
 //        System.out.println("TEST_LOG_emit_spout:"+context.getThisComponentId()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
         if(action.name().equals("COMMIT")) {
             l.info("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
-//            collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), txid);
             chkptMsgid = chkptMsgid + 1;
             collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid);
 
@@ -294,24 +292,19 @@ public class CheckpointSpout extends BaseRichSpout {
         else {
 
             for (String boltName : componentID_taskID_map.keySet()) {
-//                int task_count = componentID_taskID_map.get(boltName).size();
                 for (int taskID : componentID_taskID_map.get(boltName)) {
-//                    task_count--;
                     List<String> streamIDList = componentID_streamID_map.get(boltName);
                     for (String streamID : streamIDList) {
                         if (!streamID.equals("$checkpoint") && !streamID.equals("default")) {
                             chkptMsgid = chkptMsgid + 1;
                             l.info("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
-//                            collector.emit(streamID, new Values(txid, action), chkptMsgid);
                             collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
-//                            msgID_streamAction_map.put(chkptMsgid, new Pair<String, String>(streamID, action.name()));// FIXME:  store chkptMsgid also
                             msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(taskID, streamID, txid, action, chkptMsgid));
                         }
                     }
                 }
             }
             l.info("REWIRE_msgID_streamAction_map:" + msgID_streamAction_map);
-
 //            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");//FIXME:SYSO REMOVED
         }
     }

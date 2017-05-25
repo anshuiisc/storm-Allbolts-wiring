@@ -23,7 +23,7 @@ import org.apache.storm.StormSubmitter;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.starter.genevents.factory.ArgumentClass;
 import org.apache.storm.starter.genevents.factory.ArgumentParser;
-import org.apache.storm.starter.spout.*;
+import org.apache.storm.starter.spout.SampleSpoutWithCHKPTSpout;
 import org.apache.storm.state.KeyValueState;
 import org.apache.storm.topology.BasicOutputCollector;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -34,8 +34,6 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.storm.spout.CheckpointSpout.CHECKPOINT_STREAM_ID;
 
 /**
  * An example topology that demonstrates the use of {@link org.apache.storm.topology.IStatefulBolt}
@@ -64,26 +62,6 @@ import static org.apache.storm.spout.CheckpointSpout.CHECKPOINT_STREAM_ID;
  */
 public class FooStatefulTopologyWithOurCHKPTSpoutEvntGen {
     private static final Logger LOG = LoggerFactory.getLogger(FooStatefulTopologyWithOurCHKPTSpoutEvntGen.class);
-
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
 
     public static void main(String[] args) throws Exception {
 
@@ -133,7 +111,7 @@ public class FooStatefulTopologyWithOurCHKPTSpoutEvntGen {
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, true);
 
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10); //FIXME:AS4
 
 //        16384
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
@@ -161,6 +139,26 @@ public class FooStatefulTopologyWithOurCHKPTSpoutEvntGen {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }
 

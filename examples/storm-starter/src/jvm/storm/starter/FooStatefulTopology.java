@@ -61,26 +61,6 @@ import org.slf4j.LoggerFactory;
 public class FooStatefulTopology  {
     private static final Logger LOG = LoggerFactory.getLogger(FooStatefulTopology.class);
 
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}"+tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
-    }
-
     public static void main(String[] args) throws Exception {
         TopologyBuilder builder = new TopologyBuilder();
         builder.setSpout("spout", new RandomIntegerSpout());
@@ -91,7 +71,7 @@ public class FooStatefulTopology  {
 //        conf.setNumWorkers(2);
         conf.setDebug(true);
         conf.put(Config.TOPOLOGY_DEBUG, true);
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,6000);
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10);
         conf.put(Config.TOPOLOGY_STATE_PROVIDER,"org.apache.storm.redis.state.RedisKeyValueStateProvider");
 //        conf.put(Config.TOPOLOGY_STATE_PROVIDER_CONFIG,"{\"valueSerializerClass\":\"org.apache.storm.state.OurStateSerializerCopyDefault\"}");
 //        conf.put(Config.TOPOLOGY_STATE_PROVIDER_CONFIG,"{\"valueSerializerClass\":\"org.apache.storm.state.OurStateSerializer\"}");
@@ -113,5 +93,25 @@ public class FooStatefulTopology  {
             cluster.killTopology("test");
             cluster.shutdown();
         }
+    }
+
+    /**
+     * A bolt that uses {@link KeyValueState} to save its state.
+     */
+
+    public static class PrinterBolt extends BaseBasicBolt {
+        @Override
+        public void execute(Tuple tuple, BasicOutputCollector collector) {
+            System.out.println(tuple);
+//            LOG.debug("Got tuple {}", tuple);
+            System.out.println("Got tuple {}" + tuple);
+            collector.emit(tuple.getValues());
+        }
+
+        @Override
+        public void declareOutputFields(OutputFieldsDeclarer ofd) {
+            ofd.declare(new Fields("value"));
+        }
+
     }
 }

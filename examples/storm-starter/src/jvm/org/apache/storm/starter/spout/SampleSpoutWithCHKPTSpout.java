@@ -191,8 +191,8 @@ public class SampleSpoutWithCHKPTSpout extends OurCheckpointSpout implements ISy
 		List<String> entry = this.eventQueue.poll(); // nextTuple should not block!
 
 		if (entry == null) {
-			System.out.println("No_entry_in_queue");
-			return;
+//			System.out.println("No_entry_in_queue");
+            return;
 		}
 //			count++;
 		Values values = new Values();
@@ -205,7 +205,7 @@ public class SampleSpoutWithCHKPTSpout extends OurCheckpointSpout implements ISy
 		values.add(rowString);
 		msgId++;
 		values.add(Long.toString(msgId));
-		System.out.println("TEST_emitting_data_tuple_MSGID:" + msgId);
+//		System.out.println("TEST_emitting_data_tuple_MSGID:" + msgId);
 
 		this._collector.emit(new Values(val, System.currentTimeMillis() - (24 * 60 * 60 * 1000), msgId));
 //			this._collector.emit("datastream", new Values(val, System.currentTimeMillis() - (24 * 60 * 60 * 1000), msgId));

@@ -24,13 +24,7 @@ import org.apache.storm.generated.StormTopology;
 import org.apache.storm.starter.genevents.factory.ArgumentClass;
 import org.apache.storm.starter.genevents.factory.ArgumentParser;
 import org.apache.storm.starter.spout.SampleSpoutWithCHKPTSpout;
-import org.apache.storm.state.KeyValueState;
-import org.apache.storm.topology.BasicOutputCollector;
-import org.apache.storm.topology.OutputFieldsDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
-import org.apache.storm.topology.base.BaseBasicBolt;
-import org.apache.storm.tuple.Fields;
-import org.apache.storm.tuple.Tuple;
 import org.apache.storm.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,22 +81,8 @@ public class FooSmartGridParseTopology {
 
         TopologyBuilder builder = new TopologyBuilder();
         builder.setSpout("spout", new SampleSpoutWithCHKPTSpout(argumentClass.getInputDatasetPathName(), spoutLogFileName, argumentClass.getScalingFactor()), 1);
-
-        //        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
+//        builder.setSpout("spout", new OurRandomIntegerWithCHKPTSpout());
 //        builder.setSpout("spout", new fooRandomIntegerWithCHKPTSpout());
-//        builder.setBolt("fooPartial2", new fooXMLParser ("2"), 1).shuffleGrouping("spout","datastream")
-//                .allGrouping("spout","PREPARE_STREAM_ID");
-//        builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2")
-//                .allGrouping("spout","PREPARE_STREAM_ID");
-//        builder.setBolt("fooPartial4", new fooXMLParser("4"), 1).shuffleGrouping("fooPartial3")
-//                .allGrouping("spout","PREPARE_STREAM_ID");
-//
-//        builder.setBolt("fooPartial5", new fooXMLParser("5"), 1).shuffleGrouping("fooPartial4")
-//                .allGrouping("spout","PREPARE_STREAM_ID");
-//
-//        builder.setBolt("fooPartial6", new fooXMLParser("6"), 1).shuffleGrouping("fooPartial5")
-//                .allGrouping("spout","PREPARE_STREAM_ID");
-
 
         builder.setBolt("fooPartial2", new fooXMLParser("2"), 1).shuffleGrouping("spout").directGrouping("spout", PREPARE_STREAM_ID_list[0]);
         builder.setBolt("fooPartial3", new fooXMLParser("3"), 1).shuffleGrouping("fooPartial2").directGrouping("spout", PREPARE_STREAM_ID_list[1]);
@@ -129,40 +109,27 @@ public class FooSmartGridParseTopology {
         builder.setBolt("fooPartial15", new fooXMLParser("15"), 3).shuffleGrouping("fooPartial14").directGrouping("spout", PREPARE_STREAM_ID_list[13]);
         builder.setBolt("fooPartial16", new fooXMLParser("16"), 3).shuffleGrouping("fooPartial15").directGrouping("spout", PREPARE_STREAM_ID_list[14]);
 
-
-
-
-
 //        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
         builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial6")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[15]);
 
 
-//        builder.setBolt("fooPartial2", new foo("fooPartial2"), 1).shuffleGrouping("spout").setNumTasks(1);
-//        builder.setBolt("printer", new PrinterBolt(), 2).shuffleGrouping("partialsum2");
-//        builder.setBolt("total", new StatefulSumBolt("total"), 1).shuffleGrouping("printer");
         Config conf = new Config();
-//        conf.setNumWorkers(6);
         conf.setNumAckers(1);
         conf.setDebug(false);
         conf.put(Config.TOPOLOGY_BACKPRESSURE_ENABLE,false);
         conf.put(Config.TOPOLOGY_DEBUG, false);
-//        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
-        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL,90000); //FIXME:AS4
-//        16384
+        conf.put(Config.TOPOLOGY_STATE_CHECKPOINT_INTERVAL, 10); //FIXME:AS4
         conf.put(Config.TOPOLOGY_EXECUTOR_RECEIVE_BUFFER_SIZE, new Integer(1048576));
         conf.put(Config.TOPOLOGY_EXECUTOR_SEND_BUFFER_SIZE, new Integer(1048576));
-//        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, new Integer(32));
-
-        conf.put(Config.TOPOLOGY_BUILTIN_METRICS_BUCKET_SIZE_SECS,5);
         conf.put(Config.TOPOLOGY_STATE_PROVIDER,"org.apache.storm.redis.state.RedisKeyValueStateProvider");
 
-
-        System.out.println("TEST: inside main");
+        //        conf.put(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS,30); // in sec.
+//        conf.put(Config.TOPOLOGY_TRANSFER_BUFFER_SIZE, new Integer(32));
+//        conf.put(Config.TOPOLOGY_BUILTIN_METRICS_BUCKET_SIZE_SECS,5);
 
         if (argumentClass.getDeploymentMode().equals("C")) {
-//            conf.setNumWorkers(1);
-            conf.setNumWorkers(6);
+//            conf.setNumWorkers(6);
             StormSubmitter.submitTopology(argumentClass.getTopoName(), conf, builder.createTopology());
         }
 
@@ -174,26 +141,6 @@ public class FooSmartGridParseTopology {
             cluster.killTopology("test");
             cluster.shutdown();
         }
-    }
-
-    /**
-     * A bolt that uses {@link KeyValueState} to save its state.
-     */
-
-    public static class PrinterBolt extends BaseBasicBolt {
-        @Override
-        public void execute(Tuple tuple, BasicOutputCollector collector) {
-            System.out.println(tuple);
-//            LOG.debug("Got tuple {}", tuple);
-            System.out.println("Got tuple {}" + tuple);
-            collector.emit(tuple.getValues());
-        }
-
-        @Override
-        public void declareOutputFields(OutputFieldsDeclarer ofd) {
-            ofd.declare(new Fields("value"));
-        }
-
     }
 }
 
