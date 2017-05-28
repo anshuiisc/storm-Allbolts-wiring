@@ -21,19 +21,10 @@ import java.util.Map;
  */
 
 public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte[]>> {
-//public class foo extends OurStatefulBoltByteArray<String,List<byte[]>> {
-//public class foo extends OurStatefulBolt<String,List<Tuple>> {
-//    private static final Logger LOG = LoggerFactory.getLogger(StatefulTopology.class);
-
-    //    public static String traceVal;
-//    private static Logger l;
-//    KeyValueState<String, List<Object>> kvState;
-//    long sum;
 
     String inputFileString = null;
     fooXMLParser(String name) {
         this.name = name; // this is being used as key for storing internal state of bolt
-//        List<byte []> name+"STATE";
     }
 
     public static void initLogger(Logger l_) {
@@ -62,8 +53,6 @@ public class fooXMLParser extends OurStatefulBoltByteArrayTuple<String,List<byte
 
     @Override
     public void execute(Tuple input) {
-//        TupleUtils.isTick(input);
-
         if(!preExecute(input)){
             return;
             }

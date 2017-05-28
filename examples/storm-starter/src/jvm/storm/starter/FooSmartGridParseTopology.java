@@ -110,7 +110,7 @@ public class FooSmartGridParseTopology {
         builder.setBolt("fooPartial16", new fooXMLParser("16"), 3).shuffleGrouping("fooPartial15").directGrouping("spout", PREPARE_STREAM_ID_list[14]);
 
 //        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial6")
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial16").shuffleGrouping("fooPartial8")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[15]);
 
 

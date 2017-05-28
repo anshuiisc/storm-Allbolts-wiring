@@ -188,7 +188,7 @@ public class OurCheckpointSpout extends CheckpointSpout {
     @Override
     public void ack(Object msgId) {
 //        LOG.debug("Got ACK for msgId : " + msgId);
-        OurCheckpointSpout.logTimeStamp("ACK_OurCheckpointSpout_RECVD" + msgId + "," + System.currentTimeMillis());
+//        OurCheckpointSpout.logTimeStamp("ACK_OurCheckpointSpout_RECVD" + msgId + "," + System.currentTimeMillis());
         l.info("ACK_for_CHECKPOINT_STREAM_ID msgId:" + msgId);
             super.ack(msgId);
             if(CheckPointState.LastCheckpointAck) {

@@ -106,7 +106,7 @@ public class FooLinearParseTopology {
                 .directGrouping("spout", PREPARE_STREAM_ID_list[4]);
 
 ////        builder.setBolt("sink", new Sink(sinkLogFileName), 1).shuffleGrouping("fooPartial8");
-        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial5")
+        builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial6")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
 
         Config conf = new Config();
