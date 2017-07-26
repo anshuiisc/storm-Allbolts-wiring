@@ -173,7 +173,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //                collector.delegate.ack(checkpointTuple);
             } else {
                 LOG.debug("Bolt state is already initialized, ignoring tuple {}, action {}, txid {}",
-                          checkpointTuple, action, txid);
+                        checkpointTuple, action, txid);
 //                System.out.println("TEST_Bolt_state_is_already_initialized, ignoring tuple {}, action {}, txid {}"+
 //                        checkpointTuple+ action+txid);//FIXME:SYSO REMOVED
             }
