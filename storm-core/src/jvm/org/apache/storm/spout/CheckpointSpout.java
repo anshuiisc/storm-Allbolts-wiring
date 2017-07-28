@@ -304,6 +304,8 @@ public class CheckpointSpout extends BaseRichSpout {
                     }
                 }
             }
+            if(action.name().equals("INITSTATE"))  // FIXME:ERIC_TEST
+                Utils.sleep(100);
             l.info("REWIRE_msgID_streamAction_map:" + msgID_streamAction_map);
 //            System.out.println("TEST_Emitting_on_PREPARE_STREAM_ID");//FIXME:SYSO REMOVED
         }
