@@ -141,6 +141,7 @@ public abstract class OurStatefulBoltByteArrayTuple<T,V> extends BaseStatefulBol
             try {
                 l.info("TEST_initState_ourPendingTuples_TUPLE_" + ktd.deserialize(ourPendingTuples.get(i)).toString());
                 execute(ktd.deserialize(ourPendingTuples.get(i)));
+                OurCheckpointSpout.logTimeStamp("RECOVER_MESSAGES,"+ktd.deserialize(ourPendingTuples.get(i)).getValueByField("MSGID"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
