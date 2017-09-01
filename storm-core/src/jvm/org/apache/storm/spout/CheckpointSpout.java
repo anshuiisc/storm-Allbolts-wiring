@@ -277,7 +277,7 @@ public class CheckpointSpout extends BaseRichSpout {
     }
 
     private void emit(long txid, Action action) {
-        OurCheckpointSpout.logTimeStamp(action + "_SENT," + System.currentTimeMillis());
+//        OurCheckpointSpout.logTimeStamp(action + "_SENT," + System.currentTimeMillis()); // FIXME: ERIC logging with msgid for tracking init messages
         LOG.debug("Current state {}, emitting txid {}, action {}", curTxState, txid, action);
 //        System.out.println("TEST_emitting_Current_state {}, emitting txid {}, action {}"+","+ curTxState+","+ txid+","+ action);//FIXME:SYSO REMOVED
         //FIXME:LOG1
@@ -286,6 +286,7 @@ public class CheckpointSpout extends BaseRichSpout {
             l.info("TEST_Emitting_on_CHECKPOINT_STREAM_ID_ID");//FIXME:SYSO REMOVED
             chkptMsgid = chkptMsgid + 1;
             collector.emit(CHECKPOINT_STREAM_ID, new Values(txid, action), chkptMsgid);
+            OurCheckpointSpout.logTimeStamp(action + "_SENT," + System.currentTimeMillis());
 
             msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(-101, "$checkpoint", txid, action, chkptMsgid)); // putting taskID
         }
@@ -299,6 +300,7 @@ public class CheckpointSpout extends BaseRichSpout {
                             chkptMsgid = chkptMsgid + 1;
                             l.info("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
                             collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
+                            OurCheckpointSpout.logTimeStamp(action + "_SENT_MSGID,"+chkptMsgid+","+taskID+"_"+streamID + System.currentTimeMillis());
                             msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(taskID, streamID, txid, action, chkptMsgid));
                         }
                     }

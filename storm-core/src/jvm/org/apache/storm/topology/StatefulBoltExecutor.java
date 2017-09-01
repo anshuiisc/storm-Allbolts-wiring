@@ -190,7 +190,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 //            System.out.println("TEST_only_acking_OTHER_msg_not_emitting");//FIXME:SYSO REMOVED
             collector.delegate.ack(checkpointTuple);
         }
-        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis());
+        OurCheckpointSpout.logTimeStamp("HandleCheckpointEND-" + Thread.currentThread() + "," + action + "," + System.currentTimeMillis()+","+checkpointTuple.toString());//FIXME: ERIC init logging at bolt
 //        System.out.println("TEST_LOG_CHKPT_ACK_FROM_STATE_EXEC:"+Thread.currentThread()+"_"+action+","+System.currentTimeMillis());//FIXME:SYSO REMOVED
 //        if(action.name().equals("PREPARE")){
 //            System.out.println("TEST_only_acking_PREPARE_msg_not_emitting");
