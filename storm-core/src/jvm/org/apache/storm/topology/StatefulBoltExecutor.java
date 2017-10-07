@@ -151,6 +151,7 @@ public class StatefulBoltExecutor<T extends State> extends BaseStatefulBoltExecu
 
 //            bolt.initState((T) state);
             if (!boltInitialized) {
+                OurCheckpointSpout.logTimeStamp("INIT_RECEIVED," + Thread.currentThread() + "," + System.currentTimeMillis());
                 boltInitialized = true;
                 collector.delegate.ack(checkpointTuple);
                 bolt.initState((T) state);
