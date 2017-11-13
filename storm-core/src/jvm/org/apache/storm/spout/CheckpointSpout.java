@@ -300,7 +300,7 @@ public class CheckpointSpout extends BaseRichSpout {
                             chkptMsgid = chkptMsgid + 1;
                             l.info("REWIRE_emitting_on_streamid:" + streamID + ",txid," + txid + ",chkptMsgid," + chkptMsgid + ",action," + action.name() + ",taskID," + taskID);
                             collector.emitDirect(taskID, streamID, new Values(txid, action), chkptMsgid);
-                            OurCheckpointSpout.logTimeStamp(action + "_SENT_MSGID,"+chkptMsgid+","+taskID+"_"+streamID + System.currentTimeMillis());
+                            OurCheckpointSpout.logTimeStamp(action + "_SENT_MSGID,"+chkptMsgid+","+taskID+"_"+streamID +","+ System.currentTimeMillis());
                             msgID_streamAction_map.put(chkptMsgid, new EmittedMsgDetails(taskID, streamID, txid, action, chkptMsgid));
                         }
                     }
