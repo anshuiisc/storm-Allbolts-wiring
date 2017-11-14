@@ -96,16 +96,16 @@ public class FooStarParseTopologySleep {
         builder.setBolt("fooPartial3", new fooSleep("3"), 1).shuffleGrouping("spout")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[1]);
 
-        builder.setBolt("fooPartial4", new fooSleep("4"), 1)
+        builder.setBolt("fooPartial4", new fooSleep("4"), 2)
                 .shuffleGrouping("fooPartial2")
                 .shuffleGrouping("fooPartial3")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[2]);
 
-        builder.setBolt("fooPartial5", new fooSleep("5"), 1)
+        builder.setBolt("fooPartial5", new fooSleep("5"), 2)
                 .shuffleGrouping("fooPartial4")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[3]);
 
-        builder.setBolt("fooPartial6", new fooSleep("6"), 4)
+        builder.setBolt("fooPartial6", new fooSleep("6"), 2)
                 .shuffleGrouping("fooPartial4")
                 .directGrouping("spout", PREPARE_STREAM_ID_list[4]);
 
