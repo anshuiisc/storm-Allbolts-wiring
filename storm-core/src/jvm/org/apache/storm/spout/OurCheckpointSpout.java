@@ -179,7 +179,7 @@ public class OurCheckpointSpout extends CheckpointSpout {
         initLogger(LoggerFactory.getLogger("APP"));
         declarer.declareStream(CHECKPOINT_STREAM_ID, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
 //        declarer.declareStream("PREPARE_STREAM_ID", new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
-        for (int i = 1; i < 50; i++) {
+        for (int i = 1; i < 110; i++) {
             l.info("REWIRE_declaring_for_streamID-" + "PREPARE_STREAM_ID" + i);
             declarer.declareStream("PREPARE_STREAM_ID" + i, true, new Fields(CHECKPOINT_FIELD_TXID, CHECKPOINT_FIELD_ACTION));
         }
