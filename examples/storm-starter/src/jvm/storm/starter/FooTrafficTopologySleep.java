@@ -123,7 +123,7 @@ public class FooTrafficTopologySleep {
 
 
         builder.setBolt("sink", new fooSink(sinkLogFileName), 1).shuffleGrouping("fooPartial8").shuffleGrouping("fooPartial12")
-                .directGrouping("spout", PREPARE_STREAM_ID_list[5]);
+                .directGrouping("spout", PREPARE_STREAM_ID_list[11]);
 
         Config conf = new Config();
         conf.setNumAckers(1);
